@@ -8,8 +8,6 @@ import { HandDropPreview } from './HandDropPreview';
 
 const STACK_LABELS: Record<string, string> = {
   mainDeck: '山札',
-  graveyard: '墓地',
-  banished: '除外',
   customStack: '束',
 };
 
@@ -18,8 +16,18 @@ export function CardLayer() {
   const stacks = useTableStore((state) => state.stacks);
   const draggingInstanceId = useTableStore((state) => state.draggingInstanceId);
   const selectedInstanceIds = useTableStore((state) => state.selectedInstanceIds);
+  const players = useTableStore((state) => state.players);
   const getCardById = useCardMasterStore((state) => state.getCardById);
   const cardBackUrl = getCardBackUrl();
+
+  // In 2-player per-deck modes, label each player's own deck stack with their
+  // name instead of the generic "山札" so the two piles are distinguishable.
+  const deckOwnerNameByStackId: Record<string, string> = {};
+  if (players.length > 1) {
+    for (const player of players) {
+      if (player.deckStackId) deckOwnerNameByStackId[player.deckStackId] = player.name;
+    }
+  }
 
   const meshes = [];
 
@@ -49,7 +57,10 @@ export function CardLayer() {
           distanceFactor={8}
         >
           <div className="stack-count-badge">
-            {STACK_LABELS[stack.type]} {stack.cardInstanceIds.length}
+            {deckOwnerNameByStackId[stack.stackId]
+              ? `${deckOwnerNameByStackId[stack.stackId]}の${STACK_LABELS[stack.type]}`
+              : STACK_LABELS[stack.type]}{' '}
+            {stack.cardInstanceIds.length}
           </div>
         </Html>,
       );

@@ -6,8 +6,6 @@ export function MultiSelectContextMenu() {
   const setFaceUp = useTableStore((state) => state.setFaceUp);
   const rotateInstances = useTableStore((state) => state.rotateInstances);
   const moveCardsToHand = useTableStore((state) => state.moveCardsToHand);
-  const moveCardsToGraveyard = useTableStore((state) => state.moveCardsToGraveyard);
-  const moveCardsToBanished = useTableStore((state) => state.moveCardsToBanished);
   const createStackFromSelection = useTableStore((state) => state.createStackFromSelection);
   const clearSelection = useTableStore((state) => state.clearSelection);
   const closeMultiSelectContextMenu = useTableStore((state) => state.closeMultiSelectContextMenu);
@@ -44,12 +42,6 @@ export function MultiSelectContextMenu() {
         <div className="card-context-menu-divider" />
         <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToHand(ids))}>
           手札へ戻す
-        </button>
-        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToGraveyard(ids))}>
-          墓地へ送る
-        </button>
-        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToBanished(ids))}>
-          除外する
         </button>
         <div className="card-context-menu-divider" />
         <button className="card-context-menu-item" onClick={() => runAndClose(createStackFromSelection)}>

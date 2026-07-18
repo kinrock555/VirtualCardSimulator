@@ -29,6 +29,9 @@ export function MainMenuPage() {
         <Button variant="primary" className="main-menu-button" onClick={handleTestPlay}>
           1人でテストプレイ
         </Button>
+        <Button variant="primary" className="main-menu-button" onClick={() => navigate('/play-setup')}>
+          2人でテストプレイ
+        </Button>
         <Button variant="primary" className="main-menu-button" onClick={() => navigate('/online')}>
           オンライン対戦
         </Button>

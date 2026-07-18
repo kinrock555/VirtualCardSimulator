@@ -11,14 +11,14 @@ export function StackContextMenu() {
   const stack = useTableStore((state) =>
     state.stackContextMenu ? state.stacks.find((s) => s.stackId === state.stackContextMenu?.stackId) : undefined,
   );
+  const players = useTableStore((state) => state.players);
+  const currentPlayerIndex = useTableStore((state) => state.currentPlayerIndex);
+  const sharedDeckStackId = useTableStore((state) => state.sharedDeckStackId);
   const shuffleStack = useTableStore((state) => state.shuffleStack);
   const moveStackTopToHand = useTableStore((state) => state.moveStackTopToHand);
   const moveStackTopToTable = useTableStore((state) => state.moveStackTopToTable);
   const drawMultipleFromStack = useTableStore((state) => state.drawMultipleFromStack);
-  const returnAllToMainDeck = useTableStore((state) => state.returnAllToMainDeck);
   const unstackCustomStack = useTableStore((state) => state.unstackCustomStack);
-  const moveCardsToGraveyard = useTableStore((state) => state.moveCardsToGraveyard);
-  const moveCardsToBanished = useTableStore((state) => state.moveCardsToBanished);
   const openStackViewer = useTableStore((state) => state.openStackViewer);
   const beginPlaceStack = useTableStore((state) => state.beginPlaceStack);
   const closeStackContextMenu = useTableStore((state) => state.closeStackContextMenu);
@@ -48,6 +48,19 @@ export function StackContextMenu() {
 
   const isEmpty = stack ? stack.cardInstanceIds.length === 0 : true;
 
+  // In 2-player per-deck modes (mirroredDecks/separateDecks), each player has
+  // their own deck stack - drawing/revealing/peeking from the OTHER player's
+  // deck would both act on the wrong hand and leak that deck's contents, so
+  // those actions are disabled for a deck stack that isn't the shared pool or
+  // the active player's own. Shuffling/moving the pile is still harmless.
+  const activePlayer = players[currentPlayerIndex];
+  const isOpponentDeck =
+    Boolean(stack) &&
+    stack!.type === 'mainDeck' &&
+    players.length > 1 &&
+    sharedDeckStackId !== stack!.stackId &&
+    activePlayer?.deckStackId !== stack!.stackId;
+
   return (
     <>
       {stackContextMenu && stack && (
@@ -58,6 +71,7 @@ export function StackContextMenu() {
             onContextMenu={(event) => event.preventDefault()}
           />
           <div className="card-context-menu" style={{ left: stackContextMenu.x, top: stackContextMenu.y }}>
+            {isOpponentDeck && <div className="card-context-menu-heading">相手の山札のため一部操作できません</div>}
             {stack.type === 'mainDeck' && (
               <>
                 <button className="card-context-menu-item" onClick={() => runAndClose(() => shuffleStack(stack.stackId))}>
@@ -65,23 +79,27 @@ export function StackContextMenu() {
                 </button>
                 <button
                   className="card-context-menu-item"
-                  disabled={isEmpty}
+                  disabled={isEmpty || isOpponentDeck}
                   onClick={() => runAndClose(() => moveStackTopToHand(stack.stackId))}
                 >
                   1枚ドロー
                 </button>
-                <button className="card-context-menu-item" disabled={isEmpty} onClick={handleOpenDrawDialog}>
+                <button className="card-context-menu-item" disabled={isEmpty || isOpponentDeck} onClick={handleOpenDrawDialog}>
                   複数枚ドロー
                 </button>
                 <button
                   className="card-context-menu-item"
-                  disabled={isEmpty}
+                  disabled={isEmpty || isOpponentDeck}
                   onClick={() => runAndClose(() => moveStackTopToTable(stack.stackId))}
                 >
                   一番上のカードをめくる
                 </button>
                 <div className="card-context-menu-divider" />
-                <button className="card-context-menu-item" onClick={() => runAndClose(() => openStackViewer(stack.stackId))}>
+                <button
+                  className="card-context-menu-item"
+                  disabled={isOpponentDeck}
+                  onClick={() => runAndClose(() => openStackViewer(stack.stackId))}
+                >
                   中身を見る
                 </button>
                 <button
@@ -134,50 +152,6 @@ export function StackContextMenu() {
                 </button>
                 <button className="card-context-menu-item" onClick={() => runAndClose(() => unstackCustomStack(stack.stackId))}>
                   束を解除
-                </button>
-                <div className="card-context-menu-divider" />
-                <button
-                  className="card-context-menu-item"
-                  disabled={isEmpty}
-                  onClick={() => runAndClose(() => moveCardsToGraveyard([...stack.cardInstanceIds]))}
-                >
-                  墓地へ送る
-                </button>
-                <button
-                  className="card-context-menu-item"
-                  disabled={isEmpty}
-                  onClick={() => runAndClose(() => moveCardsToBanished([...stack.cardInstanceIds]))}
-                >
-                  除外する
-                </button>
-              </>
-            )}
-
-            {(stack.type === 'graveyard' || stack.type === 'banished') && (
-              <>
-                <button className="card-context-menu-item" onClick={() => runAndClose(() => openStackViewer(stack.stackId))}>
-                  中身を見る
-                </button>
-                <button
-                  className="card-context-menu-item"
-                  disabled={isEmpty}
-                  onClick={() => runAndClose(() => moveStackTopToHand(stack.stackId))}
-                >
-                  一番上を手札へ加える
-                </button>
-                <button
-                  className="card-context-menu-item"
-                  disabled={isEmpty}
-                  onClick={() => runAndClose(() => moveStackTopToTable(stack.stackId))}
-                >
-                  一番上をフィールドへ出す
-                </button>
-                <button
-                  className="card-context-menu-item"
-                  disabled={isEmpty}
-                  onClick={() => runAndClose(() => returnAllToMainDeck(stack.stackId))}
-                >
-                  山札へすべて戻す
                 </button>
               </>
             )}

@@ -5,12 +5,10 @@ import { Button } from '../common/Button';
 
 const STACK_TITLES: Record<string, string> = {
   mainDeck: '山札の中身',
-  graveyard: '墓地の中身',
-  banished: '除外の中身',
   customStack: '束の中身',
 };
 
-type CardAction = '' | 'hand' | 'tableUp' | 'tableDown' | 'graveyard' | 'banish' | 'deckTop' | 'deckBottom';
+type CardAction = '' | 'hand' | 'tableUp' | 'tableDown' | 'deckTop' | 'deckBottom';
 
 export function StackViewerPanel() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,8 +22,6 @@ export function StackViewerPanel() {
   const setStackOrder = useTableStore((state) => state.setStackOrder);
   const moveCardsToHand = useTableStore((state) => state.moveCardsToHand);
   const moveCardsToTable = useTableStore((state) => state.moveCardsToTable);
-  const moveCardsToGraveyard = useTableStore((state) => state.moveCardsToGraveyard);
-  const moveCardsToBanished = useTableStore((state) => state.moveCardsToBanished);
   const moveCardsToMainDeckTop = useTableStore((state) => state.moveCardsToMainDeckTop);
   const moveCardsToMainDeckBottom = useTableStore((state) => state.moveCardsToMainDeckBottom);
   const closeStackViewer = useTableStore((state) => state.closeStackViewer);
@@ -52,8 +48,6 @@ export function StackViewerPanel() {
     if (action === 'hand') moveCardsToHand([instanceId]);
     else if (action === 'tableUp') moveCardsToTable([instanceId], true);
     else if (action === 'tableDown') moveCardsToTable([instanceId], false);
-    else if (action === 'graveyard') moveCardsToGraveyard([instanceId]);
-    else if (action === 'banish') moveCardsToBanished([instanceId]);
     else if (action === 'deckTop') moveCardsToMainDeckTop([instanceId]);
     else if (action === 'deckBottom') moveCardsToMainDeckBottom([instanceId]);
   };
@@ -154,8 +148,6 @@ export function StackViewerPanel() {
                     <option value="hand">手札へ加える</option>
                     <option value="tableUp">フィールドへ表向きで出す</option>
                     <option value="tableDown">フィールドへ裏向きで出す</option>
-                    <option value="graveyard">墓地へ送る</option>
-                    <option value="banish">除外する</option>
                     <option value="deckTop">山札の一番上へ移動</option>
                     <option value="deckBottom">山札の一番下へ移動</option>
                   </select>

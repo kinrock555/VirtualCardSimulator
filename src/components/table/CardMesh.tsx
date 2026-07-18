@@ -4,7 +4,7 @@ import { useTexture, Outlines } from '@react-three/drei';
 import { Vector3 } from 'three';
 import type { CardInstance } from '../../types/table';
 import type { CardMaster } from '../../types/card';
-import { CARD_HEIGHT, CARD_THICKNESS, CARD_WIDTH, DRAG_LIFT_HEIGHT } from '../../lib/tableConstants';
+import { CARD_HEIGHT, CARD_REST_LIFT, CARD_THICKNESS, CARD_WIDTH, DRAG_LIFT_HEIGHT } from '../../lib/tableConstants';
 import { tableDragPlane } from '../../lib/dragPlane';
 import { isPointOverHandPanel } from '../../lib/handPanelBounds';
 import { useTableStore } from '../../store/useTableStore';
@@ -127,7 +127,7 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
     }
   };
 
-  const liftY = isDragging ? DRAG_LIFT_HEIGHT : isSelected ? 0.08 : 0;
+  const liftY = isDragging ? DRAG_LIFT_HEIGHT : isSelected ? 0.08 : CARD_REST_LIFT;
   const rotationYRad = (instance.rotationY * Math.PI) / 180;
 
   return (

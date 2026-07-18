@@ -2,12 +2,13 @@ import { useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useCardMasterStore } from '../../store/useCardMasterStore';
 import { useTableStore } from '../../store/useTableStore';
 import { screenToTablePoint } from '../../lib/threeBridge';
+import { getCardBackUrl } from '../../lib/cardLoader';
 
 const OVERLAP_THRESHOLD = 9;
 const CARD_BASE_WIDTH = 92;
 const OVERLAP_MARGIN = -34;
 
-type DragGhost = { instanceId: string; clientX: number; clientY: number };
+type DragGhost = { instanceId: string; clientX: number; clientY: number; faceUp: boolean };
 
 export function HandPanel() {
   const hand = useTableStore((state) => state.hand);
@@ -30,14 +31,18 @@ export function HandPanel() {
   const handlePointerDown = (instanceId: string) => (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
+    // The face orientation is locked in at drag start: plain drag = face up,
+    // Shift+drag = face down. Checking it again mid-drag would let the user
+    // flip the outcome by releasing Shift before dropping, which is confusing.
+    const faceUp = !event.shiftKey;
     selectInstance(instanceId, false);
-    beginHandFieldDrag(instanceId);
-    setGhost({ instanceId, clientX: event.clientX, clientY: event.clientY });
+    beginHandFieldDrag(instanceId, faceUp);
+    setGhost({ instanceId, clientX: event.clientX, clientY: event.clientY, faceUp });
   };
 
   const handlePointerMove = (instanceId: string) => (event: ReactPointerEvent<HTMLDivElement>) => {
     if (useTableStore.getState().handFieldDrag?.instanceId !== instanceId) return;
-    setGhost({ instanceId, clientX: event.clientX, clientY: event.clientY });
+    setGhost((prev) => (prev ? { ...prev, clientX: event.clientX, clientY: event.clientY } : prev));
     const point = screenToTablePoint(event.clientX, event.clientY);
     if (point) updateHandFieldDrag(point.x, point.z, true);
     else updateHandFieldDrag(0, 0, false);
@@ -48,7 +53,7 @@ export function HandPanel() {
     event.currentTarget.releasePointerCapture(event.pointerId);
     const drag = useTableStore.getState().handFieldDrag;
     if (drag && drag.visible) {
-      moveHandCardToTableAt(instanceId, drag.x, drag.z);
+      moveHandCardToTableAt(instanceId, drag.x, drag.z, drag.faceUp);
     } else {
       endHandFieldDrag();
     }
@@ -57,6 +62,7 @@ export function HandPanel() {
 
   const ghostCard = ghost ? cardInstances[ghost.instanceId] : undefined;
   const ghostMaster = ghostCard?.cardId ? getCardById(ghostCard.cardId) : undefined;
+  const ghostImageSrc = ghost && !ghost.faceUp ? getCardBackUrl() : ghostMaster?.imagePath;
 
   return (
     <div className={`hand-panel${collapsed ? ' collapsed' : ''}`}>
@@ -109,15 +115,15 @@ export function HandPanel() {
       )}
 
       {ghost && (
-        <div
-          className="hand-drag-ghost"
-          style={{ left: ghost.clientX, top: ghost.clientY }}
-        >
-          {ghostMaster ? (
-            <img src={ghostMaster.imagePath} alt={ghostMaster.name} draggable={false} />
+        <div className="hand-drag-ghost" style={{ left: ghost.clientX, top: ghost.clientY }}>
+          {!ghost.faceUp || ghostMaster ? (
+            <img src={ghostImageSrc} alt={ghost.faceUp ? (ghostMaster?.name ?? '') : 'カード裏面'} draggable={false} />
           ) : (
             <div className="hand-card-missing">カード不明</div>
           )}
+          <span className={`hand-drag-ghost-badge${ghost.faceUp ? '' : ' face-down'}`}>
+            {ghost.faceUp ? '表向きで出す' : '裏向きで出す'}
+          </span>
         </div>
       )}
     </div>

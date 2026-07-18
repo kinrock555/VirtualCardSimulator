@@ -12,6 +12,13 @@
   --color-danger-strong: #ff6b64;
   --color-success: #57b978;
   --font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', system-ui, sans-serif;
+
+  /* Test-play screen layout: the top bar's reserved height and a shared
+     bottom/side margin, so the card preview and operation-guide panels
+     never need a hand-panel-height value duplicated in multiple places -
+     see .play-field/.card-preview-overlay/.operation-guide-panel. */
+  --header-height: 84px;
+  --panel-edge-margin: 20px;
 }
 
 * {
@@ -633,11 +640,16 @@ button {
 }
 
 .card-preview-overlay {
+  /* Anchored to top+bottom (instead of a top+max-height computed from 100vh)
+     so its available height always matches .play-field's actual box - which
+     already excludes the hand panel via flexbox - regardless of whether the
+     hand panel is expanded, collapsed, or resized. No hand-panel-height
+     value needs to be tracked or duplicated anywhere for this to work. */
   position: absolute;
-  top: 90px;
+  top: var(--header-height);
   right: 20px;
+  bottom: var(--panel-edge-margin);
   width: clamp(260px, 25vw, 420px);
-  max-height: calc(100vh - 160px);
   z-index: 20;
   background: rgba(20, 22, 28, 0.85);
   border: 1px solid var(--color-border-strong);
@@ -654,7 +666,9 @@ button {
 .card-preview-overlay-image {
   width: 100%;
   aspect-ratio: 5 / 7;
-  max-height: calc(100vh - 240px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: 100%;
   border-radius: 8px;
   overflow: hidden;
   background: #0d0f14;
@@ -910,19 +924,39 @@ button {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
 }
 
+.hand-drag-ghost-badge {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(255, 211, 92, 0.92);
+  color: #0d1117;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.hand-drag-ghost-badge.face-down {
+  background: rgba(107, 122, 148, 0.92);
+  color: #f2f4f8;
+}
+
 /* ---------- Operation guide panel ---------- */
 
 .operation-guide-panel {
   position: absolute;
-  top: 90px;
-  left: 20px;
+  top: var(--header-height);
+  left: var(--panel-edge-margin);
+  max-height: calc(100% - var(--header-height) - var(--panel-edge-margin));
   z-index: 20;
   width: 240px;
   background: rgba(20, 22, 28, 0.72);
   border: 1px solid var(--color-border-strong);
   border-radius: 10px;
   backdrop-filter: blur(6px);
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .operation-guide-header {
@@ -1471,4 +1505,150 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* ---------- 2-player pass-and-play (test-play setup / player switch / opponent hand) ---------- */
+
+.play-setup-name-row {
+  display: flex;
+  gap: 12px;
+}
+
+.play-setup-name-row .deck-name-input {
+  flex: 1 1 0;
+}
+
+.play-setup-mode-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.play-setup-mode-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.play-setup-mode-option.selected {
+  border-color: var(--color-accent);
+  background: rgba(255, 211, 92, 0.08);
+}
+
+.play-setup-mode-option input[type='radio'] {
+  margin-top: 3px;
+}
+
+.play-setup-mode-label {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.play-setup-mode-description {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.play-topbar-player-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(20, 22, 28, 0.75);
+  padding: 8px 12px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.opponent-hand-rack {
+  position: absolute;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(20, 22, 28, 0.65);
+  padding: 8px 16px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.opponent-hand-rack-name {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.opponent-hand-rack-tiles {
+  display: flex;
+  align-items: center;
+  min-height: 34px;
+}
+
+.opponent-hand-rack-tile {
+  width: 24px;
+  aspect-ratio: 5 / 7;
+  border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.opponent-hand-rack-empty {
+  width: 24px;
+  height: 1px;
+}
+
+.opponent-hand-rack-count {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.player-switch-overlay {
+  position: fixed;
+  inset: 0;
+  /* Higher than drei's <Html> stack-count-badge overlays (they can request a
+     z-index in the millions via their distance-sorting zIndexRange) - this
+     screen must fully conceal the field, so it needs to win against those too. */
+  z-index: 2147483647;
+  background: #05060a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player-switch-card {
+  text-align: center;
+  max-width: 420px;
+  padding: 32px;
+}
+
+.player-switch-message {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 16px;
+}
+
+.player-switch-warning {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0 0 28px;
+}
+
+.player-switch-reveal-button {
+  appearance: none;
+  border: none;
+  background: var(--color-accent);
+  color: #0d1117;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 28px;
+  border-radius: 8px;
+  cursor: pointer;
 }

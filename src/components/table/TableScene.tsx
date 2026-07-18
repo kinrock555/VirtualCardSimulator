@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { TableTheme } from '../../config/tableThemes';
 import type { RoomEnvironment } from '../../config/roomEnvironments';
+import type { CameraView } from '../../store/useTableStore';
 import { TableSurface } from './TableSurface';
 import { CardLayer } from './CardLayer';
 import { CameraRig } from './CameraRig';
@@ -14,9 +15,18 @@ type TableSceneProps = {
   cameraEnabled: boolean;
   theme: TableTheme;
   roomEnvironment: RoomEnvironment;
+  cameraView: CameraView;
+  cameraResetToken: number;
 };
 
-export function TableScene({ controlsRef, cameraEnabled, theme, roomEnvironment }: TableSceneProps) {
+export function TableScene({
+  controlsRef,
+  cameraEnabled,
+  theme,
+  roomEnvironment,
+  cameraView,
+  cameraResetToken,
+}: TableSceneProps) {
   return (
     <>
       <color attach="background" args={[roomEnvironment.backgroundColor]} />
@@ -38,7 +48,13 @@ export function TableScene({ controlsRef, cameraEnabled, theme, roomEnvironment 
       <RoomEnvironmentRenderer environment={roomEnvironment} />
       <TableSurface theme={theme} />
       <CardLayer />
-      <CameraRig controlsRef={controlsRef} enabled={cameraEnabled} maxDistance={PLAY_CAMERA_MAX_DISTANCE} />
+      <CameraRig
+        controlsRef={controlsRef}
+        enabled={cameraEnabled}
+        maxDistance={PLAY_CAMERA_MAX_DISTANCE}
+        view={cameraView}
+        resetToken={cameraResetToken}
+      />
       <ThreeContextBridge />
     </>
   );

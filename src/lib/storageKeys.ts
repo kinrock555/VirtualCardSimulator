@@ -5,5 +5,6 @@ export const STORAGE_KEYS = {
   roomEnvironment: 'vct.roomEnvironment.v1',
   handPanelCollapsed: 'vct.handPanelCollapsed.v1',
   operationGuideCollapsed: 'vct.operationGuideCollapsed.v1',
+  cameraView: 'vct.cameraView.v1',
   savedBoards: 'vct.savedBoards.v1',
 } as const;

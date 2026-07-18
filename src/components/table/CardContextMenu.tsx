@@ -11,8 +11,6 @@ export function CardContextMenu() {
   const moveCardsToHand = useTableStore((state) => state.moveCardsToHand);
   const moveCardsToMainDeckTop = useTableStore((state) => state.moveCardsToMainDeckTop);
   const moveCardsToMainDeckBottom = useTableStore((state) => state.moveCardsToMainDeckBottom);
-  const moveCardsToGraveyard = useTableStore((state) => state.moveCardsToGraveyard);
-  const moveCardsToBanished = useTableStore((state) => state.moveCardsToBanished);
   const closeCardContextMenu = useTableStore((state) => state.closeCardContextMenu);
 
   if (!contextMenu || !instance) return null;
@@ -61,12 +59,6 @@ export function CardContextMenu() {
         </button>
         <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToMainDeckBottom([id]))}>
           山札の下へ戻す
-        </button>
-        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToGraveyard([id]))}>
-          墓地へ送る
-        </button>
-        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToBanished([id]))}>
-          除外する
         </button>
         <div className="card-context-menu-divider" />
         <button className="card-context-menu-item" onClick={() => runAndClose(() => removeInstances([id]))}>

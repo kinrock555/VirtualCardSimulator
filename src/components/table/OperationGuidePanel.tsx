@@ -13,12 +13,15 @@ const GUIDE_ENTRIES: GuideEntry[] = [
   { label: '選択解除', input: 'Escキー / 何もない場所をクリック' },
   { label: 'カードを移動', input: '左ドラッグ（選択中なら一括移動）' },
   { label: 'カードメニュー', input: '右クリック' },
-  { label: '山札・墓地・除外・束を操作', input: 'それぞれを右クリック' },
-  { label: '手札から出す', input: '画面下部の手札カードをドラッグ' },
+  { label: '山札・束を操作', input: 'それぞれを右クリック' },
+  { label: '表向きで出す', input: '手札から左ドラッグ' },
+  { label: '裏向きで出す', input: 'Shift＋左ドラッグ' },
   { label: '手札へ戻す', input: 'カードメニュー、または手札エリアへドラッグ' },
   { label: 'カメラ回転', input: '右ドラッグ / 中ボタンドラッグ' },
   { label: 'ズーム', input: 'マウスホイール' },
   { label: 'カメラを戻す', input: '画面上部のリセットボタン' },
+  { label: '視点を切り替える', input: 'Vキー' },
+  { label: 'プレイヤーを交代（2人プレイ時）', input: '「プレイヤー交代」ボタン / Tabキー' },
 ];
 
 export function OperationGuidePanel() {
