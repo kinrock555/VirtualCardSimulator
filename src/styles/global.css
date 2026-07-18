@@ -1121,6 +1121,140 @@ button {
   width: 100%;
 }
 
+/* ---------- Online: home / create / join screens ---------- */
+
+.online-home-body {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 20px;
+}
+
+.online-home-card {
+  width: min(480px, 100%);
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.online-home-actions {
+  display: flex;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.online-home-hint {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.online-home-error {
+  color: var(--color-danger-strong);
+}
+
+.link-button {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-accent-strong);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: inherit;
+}
+
+/* ---------- Online: room screen ---------- */
+
+.room-info-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(20, 22, 28, 0.75);
+  padding: 10px 12px;
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  flex-wrap: wrap;
+}
+
+.invite-link-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.invite-link-room-id {
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.invite-link-url-input {
+  width: 200px;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text-muted);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 11.5px;
+}
+
+.player-list-panel {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 1px solid var(--color-border);
+  padding-left: 12px;
+}
+
+.player-list-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.player-status-dot.connected {
+  color: var(--color-success);
+}
+
+.player-status-dot.disconnected {
+  color: var(--color-text-muted);
+}
+
+.connection-status-banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.connection-status-banner.reconnecting {
+  background: rgba(224, 168, 0, 0.15);
+  border: 1px solid #e0a800;
+  color: #ffce4d;
+}
+
+.connection-status-banner.error {
+  background: rgba(226, 85, 79, 0.15);
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger-strong);
+}
+
 /* ---------- Misc ---------- */
 
 .field-label {

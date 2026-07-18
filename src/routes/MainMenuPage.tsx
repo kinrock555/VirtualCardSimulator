@@ -27,7 +27,10 @@ export function MainMenuPage() {
           デッキ編集
         </Button>
         <Button variant="primary" className="main-menu-button" onClick={handleTestPlay}>
-          テストプレイ
+          1人でテストプレイ
+        </Button>
+        <Button variant="primary" className="main-menu-button" onClick={() => navigate('/online')}>
+          オンライン対戦
         </Button>
         <Button
           className="main-menu-button"
