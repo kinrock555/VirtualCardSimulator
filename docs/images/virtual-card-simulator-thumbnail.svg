@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#14161c"/>
+      <stop offset="100%" stop-color="#05060a"/>
+    </linearGradient>
+    <linearGradient id="felt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a6b52"/>
+      <stop offset="100%" stop-color="#1c3a2c"/>
+    </linearGradient>
+    <linearGradient id="cardFront1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#b0463f"/>
+      <stop offset="100%" stop-color="#8f3630"/>
+    </linearGradient>
+    <linearGradient id="cardFront2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2f6c98"/>
+      <stop offset="100%" stop-color="#245277"/>
+    </linearGradient>
+    <linearGradient id="cardFront3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#8a6a2e"/>
+      <stop offset="100%" stop-color="#6d5324"/>
+    </linearGradient>
+    <linearGradient id="cardBack" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2a3348"/>
+      <stop offset="100%" stop-color="#1b2233"/>
+    </linearGradient>
+    <radialGradient id="vignette" cx="50%" cy="38%" r="75%">
+      <stop offset="55%" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.55"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- table frame + felt, drawn as a perspective trapezoid -->
+  <polygon points="255,150 945,150 1170,540 30,540" fill="#12160f"/>
+  <polygon points="285,168 915,168 1120,522 80,522" fill="url(#felt)"/>
+
+  <!-- card back pile (deck) -->
+  <g transform="translate(330,300) rotate(-6)">
+    <rect x="-2" y="-2" width="128" height="176" rx="10" fill="url(#cardBack)" stroke="#5c6f94" stroke-width="2"/>
+    <rect x="-2" y="4" width="128" height="176" rx="10" fill="url(#cardBack)" stroke="#5c6f94" stroke-width="2"/>
+    <rect x="-2" y="10" width="128" height="176" rx="10" fill="url(#cardBack)" stroke="#5c6f94" stroke-width="2"/>
+    <ellipse cx="60" cy="98" rx="34" ry="46" fill="none" stroke="#7d90b8" stroke-width="2" opacity="0.7"/>
+  </g>
+
+  <!-- revealed / played cards fanned across the table -->
+  <g transform="translate(620,230) rotate(-14)">
+    <rect width="130" height="180" rx="10" fill="url(#cardFront2)" stroke="#e4ecf5" stroke-width="3"/>
+    <rect x="14" y="14" width="26" height="26" rx="4" fill="#f4f7fb"/>
+  </g>
+  <g transform="translate(730,255) rotate(-2)">
+    <rect width="130" height="180" rx="10" fill="url(#cardFront1)" stroke="#f6e6e2" stroke-width="3"/>
+    <rect x="14" y="14" width="26" height="26" rx="4" fill="#fbeeeb"/>
+  </g>
+  <g transform="translate(845,240) rotate(10)">
+    <rect width="130" height="180" rx="10" fill="url(#cardFront3)" stroke="#f3ead2" stroke-width="3"/>
+    <rect x="14" y="14" width="26" height="26" rx="4" fill="#fbf4e2"/>
+  </g>
+
+  <!-- front-row "hand" cards near the bottom edge -->
+  <g transform="translate(430,455) rotate(-8)">
+    <rect width="104" height="144" rx="8" fill="url(#cardFront3)" stroke="#f3ead2" stroke-width="2"/>
+  </g>
+  <g transform="translate(524,468) rotate(-2)">
+    <rect width="104" height="144" rx="8" fill="url(#cardFront2)" stroke="#e4ecf5" stroke-width="2"/>
+  </g>
+  <g transform="translate(618,466) rotate(4)">
+    <rect width="104" height="144" rx="8" fill="url(#cardFront1)" stroke="#f6e6e2" stroke-width="2"/>
+  </g>
+  <g transform="translate(712,452) rotate(10)">
+    <rect width="104" height="144" rx="8" fill="url(#cardBack)" stroke="#5c6f94" stroke-width="2"/>
+  </g>
+
+  <!-- BOX / deck-editor UI hint panel, top-right -->
+  <g transform="translate(870,60)">
+    <rect width="270" height="150" rx="12" fill="#191c24" opacity="0.9" stroke="#33374a" stroke-width="1.5"/>
+    <text x="16" y="26" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#9aa1b0" letter-spacing="1">BOX</text>
+    <rect x="16" y="34" width="34" height="46" rx="4" fill="#4a5a86"/>
+    <rect x="56" y="34" width="34" height="46" rx="4" fill="#7a3c3c"/>
+    <rect x="96" y="34" width="34" height="46" rx="4" fill="#3f6b52"/>
+    <rect x="136" y="34" width="34" height="46" rx="4" fill="#7a6a34"/>
+    <text x="16" y="104" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#9aa1b0" letter-spacing="1">DECK EDIT</text>
+    <rect x="16" y="112" width="238" height="12" rx="3" fill="#2a2e3a"/>
+    <rect x="16" y="128" width="238" height="12" rx="3" fill="#2a2e3a"/>
+  </g>
+
+  <rect width="1200" height="630" fill="url(#vignette)"/>
+
+  <!-- title -->
+  <text x="60" y="90" font-family="Segoe UI, Arial, sans-serif" font-size="54" font-weight="700" fill="#eef0f5">Virtual Card Simulator</text>
+  <text x="62" y="122" font-family="Segoe UI, Arial, sans-serif" font-size="19" fill="#7ea2ff" letter-spacing="0.5">3D Card Game Prototyping &amp; Test-Play Tool</text>
+</svg>

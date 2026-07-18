@@ -6,21 +6,29 @@ import { Button } from '../components/common/Button';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { TableScene } from '../components/table/TableScene';
 import { CardContextMenu } from '../components/table/CardContextMenu';
+import { DeckContextMenu } from '../components/table/DeckContextMenu';
 import { CardPreviewOverlay } from '../components/table/CardPreviewOverlay';
+import { OperationGuidePanel } from '../components/table/OperationGuidePanel';
+import { TableThemePanel } from '../components/table/TableThemePanel';
 import { useDeckStore } from '../store/useDeckStore';
 import { useTableStore } from '../store/useTableStore';
 import { CAMERA_INITIAL_POSITION } from '../lib/tableConstants';
+import { getTableThemeById } from '../config/tableThemes';
 
 export function PlayPage() {
   const { deckId } = useParams<{ deckId: string }>();
   const navigate = useNavigate();
   const getDeckById = useDeckStore((state) => state.getDeckById);
   const loadDeck = useTableStore((state) => state.loadDeck);
+  const resetTable = useTableStore((state) => state.resetTable);
   const draggingInstanceId = useTableStore((state) => state.draggingInstanceId);
-  const contextMenu = useTableStore((state) => state.contextMenu);
+  const cardContextMenu = useTableStore((state) => state.cardContextMenu);
+  const deckContextMenu = useTableStore((state) => state.deckContextMenu);
+  const selectedThemeId = useTableStore((state) => state.selectedThemeId);
 
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const deck = deckId ? getDeckById(deckId) : undefined;
+  const theme = getTableThemeById(selectedThemeId);
 
   useEffect(() => {
     if (deck) loadDeck(deck);
@@ -47,7 +55,15 @@ export function PlayPage() {
     );
   }
 
-  const cameraEnabled = !draggingInstanceId && !contextMenu;
+  const cameraEnabled = !draggingInstanceId && !cardContextMenu && !deckContextMenu;
+
+  const handleResetTable = () => {
+    const confirmed = window.confirm(
+      'テーブルをリセットしますか？\nすべてのカードを回収して山札をシャッフルします。',
+    );
+    if (!confirmed) return;
+    resetTable();
+  };
 
   return (
     <div className="play-screen" onContextMenu={(event) => event.preventDefault()}>
@@ -56,7 +72,7 @@ export function PlayPage() {
       >
         <Canvas shadows camera={{ position: CAMERA_INITIAL_POSITION, fov: 45 }}>
           <Suspense fallback={null}>
-            <TableScene controlsRef={controlsRef} cameraEnabled={cameraEnabled} />
+            <TableScene controlsRef={controlsRef} cameraEnabled={cameraEnabled} theme={theme} />
           </Suspense>
         </Canvas>
       </ErrorBoundary>
@@ -72,11 +88,17 @@ export function PlayPage() {
           <Button size="sm" onClick={() => controlsRef.current?.reset()}>
             カメラ初期位置へ戻す
           </Button>
+          <TableThemePanel />
+          <Button size="sm" variant="danger" onClick={handleResetTable}>
+            テーブルリセット
+          </Button>
         </div>
       </div>
 
+      <OperationGuidePanel />
       <CardPreviewOverlay />
       <CardContextMenu />
+      <DeckContextMenu />
     </div>
   );
 }

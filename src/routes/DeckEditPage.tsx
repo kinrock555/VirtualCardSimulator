@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ScreenHeader } from '../components/common/ScreenHeader';
 import { Button } from '../components/common/Button';
@@ -29,6 +29,8 @@ export function DeckEditPage() {
 
   const [draftName, setDraftName] = useState('');
   const [draftCards, setDraftCards] = useState<DeckCardEntry[]>([]);
+  const [selectedCardIds, setSelectedCardIds] = useState<Set<string>>(new Set());
+  const [bulkAddCount, setBulkAddCount] = useState(1);
 
   useEffect(() => {
     if (!editingDeckId) {
@@ -68,6 +70,45 @@ export function DeckEditPage() {
       }
       return [...prev, { cardId, count: 1 }];
     });
+  };
+
+  const toggleCardSelection = (cardId: string) => {
+    setSelectedCardIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(cardId)) next.delete(cardId);
+      else next.add(cardId);
+      return next;
+    });
+  };
+
+  const handleSelectAllFiltered = () => {
+    setSelectedCardIds(new Set(filteredBrowserCards.map((card) => card.id)));
+  };
+
+  const handleClearSelection = () => setSelectedCardIds(new Set());
+
+  const handleBulkAddCountChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const parsed = Math.floor(event.target.valueAsNumber);
+    setBulkAddCount(Number.isFinite(parsed) && parsed >= 1 ? parsed : 1);
+  };
+
+  const handleBulkAdd = () => {
+    if (!editingDeckId) {
+      showNotification('先にデッキを新規作成するか選択してください');
+      return;
+    }
+    if (selectedCardIds.size === 0) return;
+    const countToAdd = Math.max(1, Math.floor(bulkAddCount) || 1);
+    setDraftCards((prev) => {
+      const next = prev.map((entry) => ({ ...entry }));
+      for (const cardId of selectedCardIds) {
+        const existing = next.find((entry) => entry.cardId === cardId);
+        if (existing) existing.count += countToAdd;
+        else next.push({ cardId, count: countToAdd });
+      }
+      return next;
+    });
+    setSelectedCardIds(new Set());
   };
 
   const handleIncrement = (cardId: string) => {
@@ -147,12 +188,53 @@ export function DeckEditPage() {
             value={browserQuery}
             onChange={(event) => setBrowserQuery(event.target.value)}
           />
+
+          <div className="deck-bulk-select-bar">
+            <div className="row-gap-sm">
+              <Button size="sm" onClick={handleSelectAllFiltered}>
+                表示中をすべて選択
+              </Button>
+              <Button size="sm" variant="ghost" onClick={handleClearSelection}>
+                選択解除
+              </Button>
+            </div>
+            <span className="deck-bulk-select-count">{selectedCardIds.size}枚選択中</span>
+            <div className="row-gap-sm">
+              <label className="deck-bulk-count-label">
+                枚数
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  className="deck-bulk-count-input"
+                  value={bulkAddCount}
+                  onChange={handleBulkAddCountChange}
+                />
+              </label>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={!editingDeckId || selectedCardIds.size === 0}
+                onClick={handleBulkAdd}
+              >
+                選択カードを一括追加
+              </Button>
+            </div>
+          </div>
+
           <div className="deck-browser-list">
             {filteredBrowserCards.length === 0 && (
               <p className="empty-state">カードが見つかりません。</p>
             )}
             {filteredBrowserCards.map((card) => (
-              <DeckCardBrowserRow key={card.id} card={card} disabled={!editingDeckId} onAdd={handleAddCard} />
+              <DeckCardBrowserRow
+                key={card.id}
+                card={card}
+                disabled={!editingDeckId}
+                onAdd={handleAddCard}
+                isSelected={selectedCardIds.has(card.id)}
+                onToggleSelect={toggleCardSelection}
+              />
             ))}
           </div>
         </section>

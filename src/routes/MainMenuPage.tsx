@@ -15,7 +15,7 @@ export function MainMenuPage() {
   return (
     <div className="main-menu">
       <div className="main-menu-heading">
-        <h1 className="main-menu-title">Virtual Card Test</h1>
+        <h1 className="main-menu-title">Virtual Card Simulator</h1>
         <p className="main-menu-subtitle">オリジナルカードゲームの試作・テストプレイ環境</p>
       </div>
 

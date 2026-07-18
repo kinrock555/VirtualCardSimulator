@@ -14,17 +14,21 @@ type CardMeshProps = {
   cardBackUrl: string;
   isSelected: boolean;
   isDragging: boolean;
+  /** Current world position to render at (deck/hand zones compute this from their slot index). */
+  renderPosition: { x: number; y: number; z: number };
 };
 
 const FALLBACK_EDGE_COLOR = '#d8d8d8';
 const MISSING_CARD_COLOR = '#8a3b3b';
 
-function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging }: CardMeshProps) {
+function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, renderPosition }: CardMeshProps) {
   const beginDrag = useTableStore((state) => state.beginDrag);
+  const beginHandDrag = useTableStore((state) => state.beginHandDrag);
   const updateDragPosition = useTableStore((state) => state.updateDragPosition);
   const endDrag = useTableStore((state) => state.endDrag);
   const selectInstance = useTableStore((state) => state.selectInstance);
-  const openContextMenu = useTableStore((state) => state.openContextMenu);
+  const openCardContextMenu = useTableStore((state) => state.openCardContextMenu);
+  const openDeckContextMenu = useTableStore((state) => state.openDeckContextMenu);
 
   const grabOffsetRef = useRef({ x: 0, z: 0 });
   const intersectionRef = useRef(new Vector3());
@@ -46,18 +50,25 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging }: C
   }, [card, frontTexture, backTexture, instance.faceUp]);
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || instance.zone === 'deck') return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture?.(event.pointerId);
 
-    if (event.ray.intersectPlane(tableDragPlane, intersectionRef.current)) {
-      grabOffsetRef.current = {
-        x: instance.position.x - intersectionRef.current.x,
-        z: instance.position.z - intersectionRef.current.z,
-      };
-    } else {
-      grabOffsetRef.current = { x: 0, z: 0 };
+    const hasIntersection = event.ray.intersectPlane(tableDragPlane, intersectionRef.current);
+
+    if (instance.zone === 'hand') {
+      const startX = renderPosition.x;
+      const startZ = renderPosition.z;
+      grabOffsetRef.current = hasIntersection
+        ? { x: startX - intersectionRef.current.x, z: startZ - intersectionRef.current.z }
+        : { x: 0, z: 0 };
+      beginHandDrag(instance.instanceId, startX, startZ);
+      return;
     }
+
+    grabOffsetRef.current = hasIntersection
+      ? { x: instance.position.x - intersectionRef.current.x, z: instance.position.z - intersectionRef.current.z }
+      : { x: 0, z: 0 };
     beginDrag(instance.instanceId);
   };
 
@@ -79,14 +90,19 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging }: C
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
+    if (instance.zone === 'deck') return;
     selectInstance(instance.instanceId);
   };
 
   const handleContextMenu = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     event.nativeEvent.preventDefault();
-    selectInstance(instance.instanceId);
-    openContextMenu(instance.instanceId, event.nativeEvent.clientX, event.nativeEvent.clientY);
+    if (instance.zone === 'table') {
+      selectInstance(instance.instanceId);
+      openCardContextMenu(instance.instanceId, event.nativeEvent.clientX, event.nativeEvent.clientY);
+    } else if (instance.zone === 'deck') {
+      openDeckContextMenu(event.nativeEvent.clientX, event.nativeEvent.clientY);
+    }
   };
 
   const liftY = isDragging ? DRAG_LIFT_HEIGHT : isSelected ? 0.08 : 0;
@@ -94,7 +110,7 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging }: C
 
   return (
     <group
-      position={[instance.position.x, instance.position.y + liftY, instance.position.z]}
+      position={[renderPosition.x, renderPosition.y + liftY, renderPosition.z]}
       rotation={[0, rotationYRad, 0]}
     >
       <mesh

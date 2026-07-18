@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import type { TableTheme } from '../../config/tableThemes';
 import { TableSurface } from './TableSurface';
 import { CardLayer } from './CardLayer';
 import { CameraRig } from './CameraRig';
@@ -7,13 +8,14 @@ import { CameraRig } from './CameraRig';
 type TableSceneProps = {
   controlsRef: RefObject<OrbitControlsImpl | null>;
   cameraEnabled: boolean;
+  theme: TableTheme;
 };
 
-export function TableScene({ controlsRef, cameraEnabled }: TableSceneProps) {
+export function TableScene({ controlsRef, cameraEnabled, theme }: TableSceneProps) {
   return (
     <>
-      <color attach="background" args={['#05060a']} />
-      <fog attach="fog" args={['#05060a', 18, 34]} />
+      <color attach="background" args={[theme.backgroundColor]} />
+      <fog attach="fog" args={[theme.backgroundColor, 18, 34]} />
 
       <ambientLight intensity={0.55} />
       <directionalLight
@@ -28,7 +30,7 @@ export function TableScene({ controlsRef, cameraEnabled }: TableSceneProps) {
         shadow-camera-bottom={-8}
       />
 
-      <TableSurface />
+      <TableSurface theme={theme} />
       <CardLayer />
       <CameraRig controlsRef={controlsRef} enabled={cameraEnabled} />
     </>

@@ -5,22 +5,28 @@ import { getCardBackUrl } from '../../lib/cardLoader';
 export function CardPreviewOverlay() {
   const selectedInstanceId = useTableStore((state) => state.selectedInstanceId);
   const instance = useTableStore((state) =>
-    state.instances.find((i) => i.instanceId === state.selectedInstanceId),
+    state.selectedInstanceId ? state.cardInstances[state.selectedInstanceId] : undefined,
   );
   const getCardById = useCardMasterStore((state) => state.getCardById);
 
-  if (!selectedInstanceId || !instance) return null;
-
-  const card = getCardById(instance.cardId);
-  const imageUrl = instance.faceUp ? card?.imagePath ?? getCardBackUrl() : getCardBackUrl();
-  const label = instance.faceUp ? card?.name ?? '不明なカード' : '裏向き';
+  const card = instance ? getCardById(instance.cardId) : undefined;
+  const imageUrl = !instance
+    ? undefined
+    : instance.faceUp
+      ? (card?.imagePath ?? getCardBackUrl())
+      : getCardBackUrl();
+  const label = !instance ? undefined : instance.faceUp ? (card?.name ?? '不明なカード') : '裏向き';
 
   return (
     <div className="card-preview-overlay">
       <div className="card-preview-overlay-image">
-        <img src={imageUrl} alt={label} />
+        {imageUrl ? (
+          <img src={imageUrl} alt={label} />
+        ) : (
+          <div className="card-preview-overlay-placeholder">カードを選択してください</div>
+        )}
       </div>
-      <div className="card-preview-overlay-name">{label}</div>
+      <div className="card-preview-overlay-name">{selectedInstanceId ? label : '未選択'}</div>
     </div>
   );
 }

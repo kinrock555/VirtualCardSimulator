@@ -1,27 +1,28 @@
 import { useTableStore } from '../../store/useTableStore';
 
 export function CardContextMenu() {
-  const contextMenu = useTableStore((state) => state.contextMenu);
+  const contextMenu = useTableStore((state) => state.cardContextMenu);
   const instance = useTableStore((state) =>
-    state.contextMenu ? state.instances.find((i) => i.instanceId === state.contextMenu?.instanceId) : undefined,
+    state.cardContextMenu ? state.cardInstances[state.cardContextMenu.instanceId] : undefined,
   );
   const setFaceUp = useTableStore((state) => state.setFaceUp);
   const rotateInstance = useTableStore((state) => state.rotateInstance);
   const removeInstance = useTableStore((state) => state.removeInstance);
-  const closeContextMenu = useTableStore((state) => state.closeContextMenu);
+  const returnCardToHand = useTableStore((state) => state.returnCardToHand);
+  const closeCardContextMenu = useTableStore((state) => state.closeCardContextMenu);
 
   if (!contextMenu || !instance) return null;
 
   const runAndClose = (action: () => void) => {
     action();
-    closeContextMenu();
+    closeCardContextMenu();
   };
 
   return (
     <>
       <div
         style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-        onClick={closeContextMenu}
+        onClick={closeCardContextMenu}
         onContextMenu={(event) => event.preventDefault()}
       />
       <div className="card-context-menu" style={{ left: contextMenu.x, top: contextMenu.y }}>
@@ -55,11 +56,17 @@ export function CardContextMenu() {
         <div className="card-context-menu-divider" />
         <button
           className="card-context-menu-item"
+          onClick={() => runAndClose(() => returnCardToHand(instance.instanceId))}
+        >
+          手札へ戻す
+        </button>
+        <button
+          className="card-context-menu-item"
           onClick={() => runAndClose(() => removeInstance(instance.instanceId))}
         >
           テーブルから取り除く
         </button>
-        <button className="card-context-menu-item" onClick={closeContextMenu}>
+        <button className="card-context-menu-item" onClick={closeCardContextMenu}>
           キャンセル
         </button>
       </div>
