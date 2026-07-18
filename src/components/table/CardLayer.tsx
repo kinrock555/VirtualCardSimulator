@@ -2,9 +2,9 @@ import { Html } from '@react-three/drei';
 import { useCardMasterStore } from '../../store/useCardMasterStore';
 import { useTableStore } from '../../store/useTableStore';
 import { getCardBackUrl } from '../../lib/cardLoader';
-import { computeHandSlotX, computeStackLayerY } from '../../lib/tableGeometry';
-import { HAND_AREA_Y, HAND_AREA_Z } from '../../lib/tableConstants';
+import { computeStackLayerY } from '../../lib/tableGeometry';
 import { CardMesh } from './CardMesh';
+import { HandDropPreview } from './HandDropPreview';
 
 const STACK_LABELS: Record<string, string> = {
   mainDeck: '山札',
@@ -16,7 +16,6 @@ const STACK_LABELS: Record<string, string> = {
 export function CardLayer() {
   const cardInstances = useTableStore((state) => state.cardInstances);
   const stacks = useTableStore((state) => state.stacks);
-  const hand = useTableStore((state) => state.hand);
   const draggingInstanceId = useTableStore((state) => state.draggingInstanceId);
   const selectedInstanceIds = useTableStore((state) => state.selectedInstanceIds);
   const getCardById = useCardMasterStore((state) => state.getCardById);
@@ -57,22 +56,8 @@ export function CardLayer() {
     }
   }
 
-  for (let i = 0; i < hand.length; i++) {
-    const instanceId = hand[i];
-    const instance = cardInstances[instanceId];
-    if (!instance) continue;
-    meshes.push(
-      <CardMesh
-        key={instanceId}
-        instance={instance}
-        card={getCardById(instance.cardId)}
-        cardBackUrl={cardBackUrl}
-        isSelected={selectedInstanceIds.includes(instanceId)}
-        isDragging={draggingInstanceId === instanceId}
-        renderPosition={{ x: computeHandSlotX(i, hand.length), y: HAND_AREA_Y, z: HAND_AREA_Z }}
-      />,
-    );
-  }
+  // Hand cards are rendered in the 2D HandPanel now (see PlayPage), not as 3D
+  // meshes - only their zone/order in the store changed, not this render loop.
 
   for (const instanceId in cardInstances) {
     const instance = cardInstances[instanceId];
@@ -90,5 +75,10 @@ export function CardLayer() {
     );
   }
 
-  return <>{meshes}</>;
+  return (
+    <>
+      {meshes}
+      <HandDropPreview />
+    </>
+  );
 }

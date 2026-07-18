@@ -12,6 +12,9 @@ import {
 type CameraRigProps = {
   controlsRef: RefObject<OrbitControlsImpl | null>;
   enabled: boolean;
+  /** Overrides for screens with more to show around the table (e.g. the offline room background). Online keeps the defaults. */
+  minDistance?: number;
+  maxDistance?: number;
 };
 
 // Left button is reserved for card selection/drag, so it must never trigger
@@ -22,7 +25,7 @@ const MOUSE_BUTTONS = {
   RIGHT: MOUSE.ROTATE,
 };
 
-export function CameraRig({ controlsRef, enabled }: CameraRigProps) {
+export function CameraRig({ controlsRef, enabled, minDistance, maxDistance }: CameraRigProps) {
   return (
     <OrbitControls
       ref={controlsRef}
@@ -30,8 +33,8 @@ export function CameraRig({ controlsRef, enabled }: CameraRigProps) {
       makeDefault
       target={CAMERA_TARGET}
       enablePan={false}
-      minDistance={CAMERA_MIN_DISTANCE}
-      maxDistance={CAMERA_MAX_DISTANCE}
+      minDistance={minDistance ?? CAMERA_MIN_DISTANCE}
+      maxDistance={maxDistance ?? CAMERA_MAX_DISTANCE}
       maxPolarAngle={CAMERA_MAX_POLAR_ANGLE}
       minPolarAngle={0.15}
       mouseButtons={MOUSE_BUTTONS}

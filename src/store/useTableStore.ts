@@ -20,10 +20,13 @@ import {
 import { loadFromStorage, saveToStorage } from '../lib/storage';
 import { STORAGE_KEYS } from '../lib/storageKeys';
 import { DEFAULT_TABLE_THEME_ID } from '../config/tableThemes';
+import { DEFAULT_ROOM_ENVIRONMENT_ID } from '../config/roomEnvironments';
 
 type CardContextMenuState = { instanceId: string; x: number; y: number };
 type StackContextMenuState = { stackId: string; x: number; y: number };
 type ScreenPoint = { x: number; y: number };
+/** Ephemeral (not persisted) state while a hand card is being dragged toward the 3D field. */
+type HandFieldDragState = { instanceId: string; x: number; z: number; visible: boolean };
 
 type TableState = {
   deckId: string | null;
@@ -46,6 +49,10 @@ type TableState = {
   stackViewerStackId: string | null;
 
   selectedThemeId: string;
+  selectedRoomEnvironmentId: string;
+  handPanelCollapsed: boolean;
+  /** Non-null only while a hand card is being dragged out of the 2D hand panel toward the field. */
+  handFieldDrag: HandFieldDragState | null;
 
   /** Expands a deck's card entries into a fresh main deck, plus empty graveyard/banished piles. */
   loadDeck: (deck: DeckData) => void;
@@ -59,10 +66,17 @@ type TableState = {
   clearSelection: () => void;
 
   beginDrag: (instanceId: string) => void;
-  /** Moves a hand card onto the table at `x,z` and starts dragging it immediately. */
-  beginHandDrag: (instanceId: string, x: number, z: number) => void;
   updateDragPosition: (instanceId: string, x: number, z: number) => void;
   endDrag: () => void;
+
+  /** Starts a 2D-hand-panel-initiated drag toward the 3D field (see HandPanel). */
+  beginHandFieldDrag: (instanceId: string) => void;
+  /** Updates the live drop-preview position while dragging from the hand panel. */
+  updateHandFieldDrag: (x: number, z: number, visible: boolean) => void;
+  /** Cancels a hand->field drag without moving any card (card stays in hand). */
+  endHandFieldDrag: () => void;
+  /** Commits a hand->field drop: moves the card to the table at an explicit point, face up. */
+  moveHandCardToTableAt: (instanceId: string, x: number, z: number) => void;
 
   setFaceUp: (instanceIds: string[], faceUp: boolean) => void;
   rotateInstances: (instanceIds: string[], direction: 'left' | 'right') => void;
@@ -97,6 +111,8 @@ type TableState = {
   closeStackViewer: () => void;
 
   setTheme: (themeId: string) => void;
+  setRoomEnvironment: (environmentId: string) => void;
+  setHandPanelCollapsed: (collapsed: boolean) => void;
 
   getInstanceById: (instanceId: string) => CardInstance | undefined;
   getStackById: (stackId: string) => CardStack | undefined;
@@ -124,6 +140,11 @@ function makePermanentStack(type: StackType, stackId: string, origin: { x: numbe
 }
 
 const initialThemeId = loadFromStorage<string>(STORAGE_KEYS.tableTheme, DEFAULT_TABLE_THEME_ID);
+const initialRoomEnvironmentId = loadFromStorage<string>(
+  STORAGE_KEYS.roomEnvironment,
+  DEFAULT_ROOM_ENVIRONMENT_ID,
+);
+const initialHandPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.handPanelCollapsed, false);
 
 export const useTableStore = create<TableState>((set, get) => ({
   deckId: null,
@@ -142,6 +163,9 @@ export const useTableStore = create<TableState>((set, get) => ({
   stackViewerStackId: null,
 
   selectedThemeId: initialThemeId,
+  selectedRoomEnvironmentId: initialRoomEnvironmentId,
+  handPanelCollapsed: initialHandPanelCollapsed,
+  handFieldDrag: null,
 
   loadDeck: (deck) => {
     const cardInstances: Record<string, CardInstance> = {};
@@ -184,6 +208,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       multiSelectContextMenu: null,
       placingStackId: null,
       stackViewerStackId: null,
+      handFieldDrag: null,
     });
   },
 
@@ -217,6 +242,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         multiSelectContextMenu: null,
         placingStackId: null,
         stackViewerStackId: null,
+        handFieldDrag: null,
       };
     });
   },
@@ -229,6 +255,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       stacks: state.stacks,
       hand: state.hand,
       selectedThemeId: state.selectedThemeId,
+      selectedRoomEnvironmentId: state.selectedRoomEnvironmentId,
     };
   },
 
@@ -274,6 +301,10 @@ export const useTableStore = create<TableState>((set, get) => ({
       stacks: filteredStacks,
       hand: validHand,
       selectedThemeId: typeof snapshot.selectedThemeId === 'string' ? snapshot.selectedThemeId : DEFAULT_TABLE_THEME_ID,
+      selectedRoomEnvironmentId:
+        typeof snapshot.selectedRoomEnvironmentId === 'string'
+          ? snapshot.selectedRoomEnvironmentId
+          : DEFAULT_ROOM_ENVIRONMENT_ID,
       selectedInstanceIds: [],
       draggingInstanceId: null,
       groupDragOffsets: null,
@@ -282,6 +313,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       multiSelectContextMenu: null,
       placingStackId: null,
       stackViewerStackId: null,
+      handFieldDrag: null,
     });
 
     return { warnings };
@@ -319,11 +351,27 @@ export const useTableStore = create<TableState>((set, get) => ({
     });
   },
 
-  beginHandDrag: (instanceId, x, z) => {
+  beginHandFieldDrag: (instanceId) => {
     set((state) => {
       if (!state.hand.includes(instanceId)) return state;
+      return { handFieldDrag: { instanceId, x: 0, z: 0, visible: false } };
+    });
+  },
+
+  updateHandFieldDrag: (x, z, visible) => {
+    set((state) => {
+      if (!state.handFieldDrag) return state;
+      return { handFieldDrag: { ...state.handFieldDrag, x, z, visible } };
+    });
+  },
+
+  endHandFieldDrag: () => set({ handFieldDrag: null }),
+
+  moveHandCardToTableAt: (instanceId, x, z) => {
+    set((state) => {
+      if (!state.hand.includes(instanceId)) return { handFieldDrag: null };
       const instance = state.cardInstances[instanceId];
-      if (!instance) return state;
+      if (!instance) return { handFieldDrag: null };
       const clamped = clampToTable(x, z);
       return {
         hand: state.hand.filter((id) => id !== instanceId),
@@ -334,11 +382,10 @@ export const useTableStore = create<TableState>((set, get) => ({
             zone: 'table',
             position: { x: clamped.x, y: 0, z: clamped.z },
             faceUp: true,
+            rotationY: 0,
           },
         },
-        draggingInstanceId: instanceId,
-        selectedInstanceIds: [instanceId],
-        groupDragOffsets: null,
+        handFieldDrag: null,
       };
     });
   },
@@ -746,6 +793,16 @@ export const useTableStore = create<TableState>((set, get) => ({
   setTheme: (themeId) => {
     saveToStorage(STORAGE_KEYS.tableTheme, themeId);
     set({ selectedThemeId: themeId });
+  },
+
+  setRoomEnvironment: (environmentId) => {
+    saveToStorage(STORAGE_KEYS.roomEnvironment, environmentId);
+    set({ selectedRoomEnvironmentId: environmentId });
+  },
+
+  setHandPanelCollapsed: (collapsed) => {
+    saveToStorage(STORAGE_KEYS.handPanelCollapsed, collapsed);
+    set({ handPanelCollapsed: collapsed });
   },
 
   getInstanceById: (instanceId) => get().cardInstances[instanceId],

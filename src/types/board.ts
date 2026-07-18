@@ -16,6 +16,8 @@ export type BoardSnapshot = {
   stacks: CardStack[];
   hand: string[];
   selectedThemeId: string;
+  /** Optional for backward compatibility - saves made before room environments existed omit this. */
+  selectedRoomEnvironmentId?: string;
   camera: BoardCameraState | null;
 };
 

@@ -6,6 +6,7 @@ import type { CardInstance } from '../../types/table';
 import type { CardMaster } from '../../types/card';
 import { CARD_HEIGHT, CARD_THICKNESS, CARD_WIDTH, DRAG_LIFT_HEIGHT } from '../../lib/tableConstants';
 import { tableDragPlane } from '../../lib/dragPlane';
+import { isPointOverHandPanel } from '../../lib/handPanelBounds';
 import { useTableStore } from '../../store/useTableStore';
 
 type CardMeshProps = {
@@ -24,9 +25,9 @@ const STACKED_ZONES = new Set(['deck', 'graveyard', 'banished']);
 
 function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, renderPosition }: CardMeshProps) {
   const beginDrag = useTableStore((state) => state.beginDrag);
-  const beginHandDrag = useTableStore((state) => state.beginHandDrag);
   const updateDragPosition = useTableStore((state) => state.updateDragPosition);
   const endDrag = useTableStore((state) => state.endDrag);
+  const moveCardsToHand = useTableStore((state) => state.moveCardsToHand);
   const selectInstance = useTableStore((state) => state.selectInstance);
   const openCardContextMenu = useTableStore((state) => state.openCardContextMenu);
   const openStackContextMenu = useTableStore((state) => state.openStackContextMenu);
@@ -53,7 +54,9 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     if (event.button !== 0) return;
-    if (instance.zone !== 'table' && instance.zone !== 'hand') return;
+    // Hand cards render in the 2D hand panel now, not as 3D meshes, so only
+    // table-zone cards are ever draggable here.
+    if (instance.zone !== 'table') return;
     // Shift is reserved for click-to-toggle multi-select (handled in onClick) - starting a
     // drag here would immediately collapse the selection to just this card beforehand.
     if (event.nativeEvent.shiftKey) return;
@@ -61,17 +64,6 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
     (event.target as Element).setPointerCapture?.(event.pointerId);
 
     const hasIntersection = event.ray.intersectPlane(tableDragPlane, intersectionRef.current);
-
-    if (instance.zone === 'hand') {
-      const startX = renderPosition.x;
-      const startZ = renderPosition.z;
-      grabOffsetRef.current = hasIntersection
-        ? { x: startX - intersectionRef.current.x, z: startZ - intersectionRef.current.z }
-        : { x: 0, z: 0 };
-      beginHandDrag(instance.instanceId, startX, startZ);
-      return;
-    }
-
     grabOffsetRef.current = hasIntersection
       ? { x: instance.position.x - intersectionRef.current.x, z: instance.position.z - intersectionRef.current.z }
       : { x: 0, z: 0 };
@@ -89,8 +81,19 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
   };
 
   const handlePointerUp = (event: ThreeEvent<PointerEvent>) => {
-    if (useTableStore.getState().draggingInstanceId !== instance.instanceId) return;
+    const state = useTableStore.getState();
+    if (state.draggingInstanceId !== instance.instanceId) return;
     (event.target as Element).releasePointerCapture?.(event.pointerId);
+
+    // Dropping a single (non-group) table card onto the 2D hand panel returns
+    // it to hand, mirroring the right-click "手札へ戻す" menu item.
+    const isGroupDrag = Boolean(state.groupDragOffsets && Object.keys(state.groupDragOffsets).length > 0);
+    if (!isGroupDrag && isPointOverHandPanel(event.nativeEvent.clientX, event.nativeEvent.clientY)) {
+      moveCardsToHand([instance.instanceId]);
+      endDrag();
+      return;
+    }
+
     endDrag();
   };
 

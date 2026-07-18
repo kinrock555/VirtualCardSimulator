@@ -6,9 +6,9 @@ import type { TableTheme } from '../config/tableThemes';
 // (weave/felt/planks) is reused across themes, only the tint changes.
 const textureCache = new Map<TableTheme['surfacePattern'], CanvasTexture>();
 
-const BASE_GRAY = '#808080';
-const LIGHT_GRAY = '#a8a8a8';
-const DARK_GRAY = '#5c5c5c';
+const BASE_GRAY = '#969696';
+const LIGHT_GRAY = '#c2c2c2';
+const DARK_GRAY = '#6e6e6e';
 
 function createCanvas(size: number): CanvasRenderingContext2D {
   const canvas = document.createElement('canvas');

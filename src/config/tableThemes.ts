@@ -24,26 +24,26 @@ export const TABLE_THEMES: TableTheme[] = [
   {
     id: 'red-carpet',
     name: '赤いじゅうたん',
-    tableColor: '#5c1420',
+    tableColor: '#7c2431',
     surfacePattern: 'weave',
     backgroundColor: '#0e0708',
-    previewPath: swatchDataUri('#5c1420', '#0e0708'),
+    previewPath: swatchDataUri('#7c2431', '#0e0708'),
   },
   {
     id: 'classic-green',
     name: 'クラシックグリーン',
-    tableColor: '#2f5a44',
+    tableColor: '#3d7256',
     surfacePattern: 'felt',
     backgroundColor: '#05060a',
-    previewPath: swatchDataUri('#2f5a44', '#05060a'),
+    previewPath: swatchDataUri('#3d7256', '#05060a'),
   },
   {
     id: 'dark-table',
     name: 'ダークテーブル',
-    tableColor: '#24262b',
+    tableColor: '#3d4048',
     surfacePattern: 'planks',
     backgroundColor: '#020203',
-    previewPath: swatchDataUri('#24262b', '#020203'),
+    previewPath: swatchDataUri('#3d4048', '#020203'),
   },
 ];
 
