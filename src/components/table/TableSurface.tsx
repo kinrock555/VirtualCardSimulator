@@ -12,13 +12,18 @@ type TableSurfaceProps = {
 };
 
 export function TableSurface({ theme }: TableSurfaceProps) {
-  const placeDeckAt = useTableStore((state) => state.placeDeckAt);
+  const placeStackAt = useTableStore((state) => state.placeStackAt);
+  const clearSelection = useTableStore((state) => state.clearSelection);
   const texture = useMemo(() => getTableSurfaceTexture(theme), [theme]);
 
   const handleSurfaceClick = (event: ThreeEvent<MouseEvent>) => {
-    if (!useTableStore.getState().isPlacingDeck) return;
     event.stopPropagation();
-    placeDeckAt(event.point.x, event.point.z);
+    const state = useTableStore.getState();
+    if (state.placingStackId) {
+      placeStackAt(event.point.x, event.point.z);
+      return;
+    }
+    if (state.selectedInstanceIds.length > 0) clearSelection();
   };
 
   return (

@@ -7,9 +7,11 @@ type GuideEntry = {
 
 const GUIDE_ENTRIES: GuideEntry[] = [
   { label: 'カードを選択', input: '左クリック' },
-  { label: 'カードを移動', input: '左ドラッグ' },
+  { label: '複数選択', input: 'Shift + 左クリック' },
+  { label: '選択解除', input: 'Escキー / 何もない場所をクリック' },
+  { label: 'カードを移動', input: '左ドラッグ（選択中なら一括移動）' },
   { label: 'カードメニュー', input: '右クリック' },
-  { label: '山札を操作', input: '山札を右クリック' },
+  { label: '山札・墓地・除外・束を操作', input: 'それぞれを右クリック' },
   { label: '手札から出す', input: 'カードをドラッグ' },
   { label: '手札へ戻す', input: 'カードメニューから選択' },
   { label: 'カメラ回転', input: '右ドラッグ / 中ボタンドラッグ' },

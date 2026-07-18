@@ -1,7 +1,13 @@
 export type CardRotation = 0 | 90 | 180 | 270;
 
-/** Where a card instance currently lives: the draw pile, a player's hand, or loose on the table. */
-export type CardZone = 'deck' | 'hand' | 'table';
+/**
+ * Where a card instance currently lives.
+ * - "deck": inside some CardStack (main deck or a custom stack) - see `stacks`.
+ * - "hand": in the player's hand row.
+ * - "table": loose on the table, freely draggable.
+ * - "graveyard" / "banished": inside the (always-present) graveyard/banished stack.
+ */
+export type CardZone = 'deck' | 'hand' | 'table' | 'graveyard' | 'banished';
 
 export type CardInstance = {
   instanceId: string;
@@ -9,8 +15,9 @@ export type CardInstance = {
   zone: CardZone;
   /**
    * Authoritative only for zone "table" (free placement, draggable).
-   * For "deck"/"hand" the render position is computed from the card's
-   * index within `deckStack`/`hand` instead, so this value is stale/unused.
+   * For "deck"/"hand"/"graveyard"/"banished" the render position is computed
+   * from the card's index within its stack/hand instead, so this value is
+   * stale/unused for those zones.
    */
   position: {
     x: number;
@@ -21,13 +28,19 @@ export type CardInstance = {
   faceUp: boolean;
 };
 
+/** What kind of pile a CardStack represents. */
+export type StackType = 'mainDeck' | 'customStack' | 'graveyard' | 'banished';
+
 /**
- * A single draw pile on the table. Card order is the source of truth for
- * "top of the deck" - the LAST id in `cardInstanceIds` is the top card
- * (draw / reveal-top always operate on `cardInstanceIds[length - 1]`).
+ * A pile of cards on the table (the main deck, a graveyard, a banished pile,
+ * or a user-created custom stack). Card order is the source of truth for
+ * "top of the stack" - the LAST id in `cardInstanceIds` is the top card
+ * (draw / reveal-top / shuffle-preserving-order all operate on the end of
+ * this array), matching the convention already used by the main deck.
  */
 export type CardStack = {
   stackId: string;
+  type: StackType;
   cardInstanceIds: string[];
   position: {
     x: number;

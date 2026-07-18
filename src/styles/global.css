@@ -616,6 +616,8 @@ button {
 .play-topbar-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 320px);
   background: rgba(20, 22, 28, 0.75);
   padding: 8px;
   border-radius: 10px;
@@ -676,6 +678,8 @@ button {
   position: fixed;
   z-index: 50;
   min-width: 190px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border-strong);
   border-radius: 8px;
@@ -684,6 +688,15 @@ button {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.card-context-menu-heading {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 6px 12px 4px;
 }
 
 .card-context-menu-item {
@@ -865,6 +878,247 @@ button {
   font-size: 11.5px;
   color: var(--color-accent-strong);
   font-weight: 700;
+}
+
+/* ---------- Stack count badges (Html labels above piles) ---------- */
+
+.stack-count-badge {
+  background: rgba(15, 17, 22, 0.82);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- Generic modal (draw dialog / stack viewer / board save+load) ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(4, 5, 8, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-panel {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 12px;
+  padding: 22px;
+  width: min(420px, 100%);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* ---------- Draw count dialog ---------- */
+
+.draw-count-dialog {
+  width: min(360px, 100%);
+}
+
+.draw-count-quick-row {
+  display: flex;
+  gap: 8px;
+}
+
+.draw-count-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.draw-count-input {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+/* ---------- Stack viewer panel ---------- */
+
+.stack-viewer-panel {
+  width: min(640px, 100%);
+}
+
+.stack-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stack-viewer-hint {
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.stack-viewer-hint-muted {
+  color: var(--color-accent-strong);
+}
+
+.stack-viewer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.stack-viewer-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-bg-panel);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.stack-viewer-row[draggable='true'] {
+  cursor: grab;
+}
+
+.stack-viewer-row-thumb {
+  width: 42px;
+  height: 58px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0d0f14;
+  flex-shrink: 0;
+}
+
+.stack-viewer-row-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.stack-viewer-row-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.stack-viewer-row-name {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stack-viewer-row-position {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.stack-viewer-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.stack-viewer-action-select {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+}
+
+/* ---------- Board save / load panels ---------- */
+
+.board-save-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--color-text-muted);
+}
+
+.board-load-panel {
+  width: min(560px, 100%);
+}
+
+.board-load-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+}
+
+.board-load-row {
+  background: var(--color-bg-panel);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.board-load-info {
+  min-width: 0;
+}
+
+.board-load-name {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.board-load-meta {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.board-load-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.board-load-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
 }
 
 /* ---------- Misc ---------- */

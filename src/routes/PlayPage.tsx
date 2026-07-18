@@ -6,10 +6,13 @@ import { Button } from '../components/common/Button';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 import { TableScene } from '../components/table/TableScene';
 import { CardContextMenu } from '../components/table/CardContextMenu';
-import { DeckContextMenu } from '../components/table/DeckContextMenu';
+import { StackContextMenu } from '../components/table/StackContextMenu';
+import { MultiSelectContextMenu } from '../components/table/MultiSelectContextMenu';
+import { StackViewerPanel } from '../components/table/StackViewerPanel';
 import { CardPreviewOverlay } from '../components/table/CardPreviewOverlay';
 import { OperationGuidePanel } from '../components/table/OperationGuidePanel';
 import { TableThemePanel } from '../components/table/TableThemePanel';
+import { BoardManagerPanel } from '../components/table/BoardManagerPanel';
 import { useDeckStore } from '../store/useDeckStore';
 import { useTableStore } from '../store/useTableStore';
 import { CAMERA_INITIAL_POSITION } from '../lib/tableConstants';
@@ -21,9 +24,12 @@ export function PlayPage() {
   const getDeckById = useDeckStore((state) => state.getDeckById);
   const loadDeck = useTableStore((state) => state.loadDeck);
   const resetTable = useTableStore((state) => state.resetTable);
+  const clearSelection = useTableStore((state) => state.clearSelection);
   const draggingInstanceId = useTableStore((state) => state.draggingInstanceId);
   const cardContextMenu = useTableStore((state) => state.cardContextMenu);
-  const deckContextMenu = useTableStore((state) => state.deckContextMenu);
+  const stackContextMenu = useTableStore((state) => state.stackContextMenu);
+  const multiSelectContextMenu = useTableStore((state) => state.multiSelectContextMenu);
+  const stackViewerStackId = useTableStore((state) => state.stackViewerStackId);
   const selectedThemeId = useTableStore((state) => state.selectedThemeId);
 
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -36,6 +42,14 @@ export function PlayPage() {
     // which would otherwise wipe in-progress table state every autosave-like edit.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckId]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') clearSelection();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [clearSelection]);
 
   if (!deckId || !deck) {
     return (
@@ -55,7 +69,7 @@ export function PlayPage() {
     );
   }
 
-  const cameraEnabled = !draggingInstanceId && !cardContextMenu && !deckContextMenu;
+  const cameraEnabled = !draggingInstanceId && !cardContextMenu && !stackContextMenu && !multiSelectContextMenu;
 
   const handleResetTable = () => {
     const confirmed = window.confirm(
@@ -89,6 +103,7 @@ export function PlayPage() {
             カメラ初期位置へ戻す
           </Button>
           <TableThemePanel />
+          <BoardManagerPanel controlsRef={controlsRef} />
           <Button size="sm" variant="danger" onClick={handleResetTable}>
             テーブルリセット
           </Button>
@@ -98,7 +113,9 @@ export function PlayPage() {
       <OperationGuidePanel />
       <CardPreviewOverlay />
       <CardContextMenu />
-      <DeckContextMenu />
+      <StackContextMenu />
+      <MultiSelectContextMenu />
+      {stackViewerStackId && <StackViewerPanel />}
     </div>
   );
 }

@@ -33,10 +33,26 @@ export function normalizeRotation(degrees: number): 0 | 90 | 180 | 270 {
   return 0;
 }
 
-/** Height of the Nth card (0-based, from the bottom) in a draw pile - growth is capped for huge decks. */
-export function computeDeckLayerY(indexFromBottom: number): number {
+/** Height of the Nth card (0-based, from the bottom) in any stack/pile - growth is capped for huge piles. */
+export function computeStackLayerY(indexFromBottom: number): number {
   const cappedIndex = Math.min(indexFromBottom, DRAW_PILE_MAX_VISIBLE_LAYERS);
   return cappedIndex * (CARD_THICKNESS + DRAW_PILE_STACK_OFFSET_Y);
+}
+
+/** Center point of a set of table positions - used as a new custom stack's default position. */
+export function computeCentroid(points: readonly { x: number; z: number }[]): { x: number; z: number } {
+  if (points.length === 0) return { x: 0, z: 0 };
+  const sum = points.reduce((acc, p) => ({ x: acc.x + p.x, z: acc.z + p.z }), { x: 0, z: 0 });
+  return { x: sum.x / points.length, z: sum.z / points.length };
+}
+
+/** Spread-out position for the Nth card (0-based) when a stack is dissolved ("束を解除"). */
+export function computeUnstackSpreadPosition(
+  origin: { x: number; z: number },
+  index: number,
+  offset: { x: number; z: number },
+): { x: number; z: number } {
+  return clampToTable(origin.x + index * offset.x, origin.z + index * offset.z);
 }
 
 /** X offset (from the hand row's center) of the card at `index` among `count` hand cards. */

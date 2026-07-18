@@ -14,12 +14,13 @@ type CardMeshProps = {
   cardBackUrl: string;
   isSelected: boolean;
   isDragging: boolean;
-  /** Current world position to render at (deck/hand zones compute this from their slot index). */
+  /** Current world position to render at (deck/hand/graveyard/banished zones compute this from their slot index). */
   renderPosition: { x: number; y: number; z: number };
 };
 
 const FALLBACK_EDGE_COLOR = '#d8d8d8';
 const MISSING_CARD_COLOR = '#8a3b3b';
+const STACKED_ZONES = new Set(['deck', 'graveyard', 'banished']);
 
 function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, renderPosition }: CardMeshProps) {
   const beginDrag = useTableStore((state) => state.beginDrag);
@@ -28,7 +29,8 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
   const endDrag = useTableStore((state) => state.endDrag);
   const selectInstance = useTableStore((state) => state.selectInstance);
   const openCardContextMenu = useTableStore((state) => state.openCardContextMenu);
-  const openDeckContextMenu = useTableStore((state) => state.openDeckContextMenu);
+  const openStackContextMenu = useTableStore((state) => state.openStackContextMenu);
+  const openMultiSelectContextMenu = useTableStore((state) => state.openMultiSelectContextMenu);
 
   const grabOffsetRef = useRef({ x: 0, z: 0 });
   const intersectionRef = useRef(new Vector3());
@@ -50,7 +52,11 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
   }, [card, frontTexture, backTexture, instance.faceUp]);
 
   const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
-    if (event.button !== 0 || instance.zone === 'deck') return;
+    if (event.button !== 0) return;
+    if (instance.zone !== 'table' && instance.zone !== 'hand') return;
+    // Shift is reserved for click-to-toggle multi-select (handled in onClick) - starting a
+    // drag here would immediately collapse the selection to just this card beforehand.
+    if (event.nativeEvent.shiftKey) return;
     event.stopPropagation();
     (event.target as Element).setPointerCapture?.(event.pointerId);
 
@@ -90,18 +96,31 @@ function CardMeshImpl({ instance, card, cardBackUrl, isSelected, isDragging, ren
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    if (instance.zone === 'deck') return;
-    selectInstance(instance.instanceId);
+    if (STACKED_ZONES.has(instance.zone)) return;
+    const additive = instance.zone === 'table' && event.nativeEvent.shiftKey;
+    selectInstance(instance.instanceId, additive);
   };
 
   const handleContextMenu = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     event.nativeEvent.preventDefault();
+    const { clientX, clientY } = event.nativeEvent;
+
+    if (STACKED_ZONES.has(instance.zone)) {
+      const stack = useTableStore.getState().findStackContaining(instance.instanceId);
+      if (stack) openStackContextMenu(stack.stackId, clientX, clientY);
+      return;
+    }
+
     if (instance.zone === 'table') {
-      selectInstance(instance.instanceId);
-      openCardContextMenu(instance.instanceId, event.nativeEvent.clientX, event.nativeEvent.clientY);
-    } else if (instance.zone === 'deck') {
-      openDeckContextMenu(event.nativeEvent.clientX, event.nativeEvent.clientY);
+      const state = useTableStore.getState();
+      const isPartOfMultiSelection = state.selectedInstanceIds.length > 1 && state.selectedInstanceIds.includes(instance.instanceId);
+      if (isPartOfMultiSelection) {
+        openMultiSelectContextMenu(clientX, clientY);
+      } else {
+        selectInstance(instance.instanceId, false);
+        openCardContextMenu(instance.instanceId, clientX, clientY);
+      }
     }
   };
 

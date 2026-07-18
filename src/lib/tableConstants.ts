@@ -13,8 +13,19 @@ export const DRAW_PILE_STACK_OFFSET_Y = 0.005;
 // Stack height growth is capped so a 100+ card deck doesn't tower over the table.
 export const DRAW_PILE_MAX_VISIBLE_LAYERS = 40;
 
-// Where "山札の一番上をめくる" places the revealed card, relative to the deck.
+// Fixed initial positions for the always-present graveyard/banished piles.
+// Custom stacks have no fixed spot - they spawn near where they were created.
+// Kept short of TABLE_WIDTH/4 on X so the piles don't render underneath the
+// fixed-position card preview panel docked on the right edge of the screen.
+export const GRAVEYARD_ORIGIN = { x: TABLE_WIDTH / 8, z: 0.5 };
+export const BANISHED_ORIGIN = { x: TABLE_WIDTH / 8, z: -TABLE_DEPTH / 2 + 1.5 };
+
+// Where "山札の一番上をめくる" / "一番上をフィールドへ出す" places the revealed card,
+// relative to the stack it came from.
 export const REVEAL_TOP_OFFSET = { x: CARD_WIDTH * 1.3, z: 0 };
+
+// How far apart cards land when a custom stack is dissolved ("束を解除").
+export const UNSTACK_SPREAD_OFFSET = { x: CARD_WIDTH * 0.55, z: CARD_HEIGHT * 0.4 };
 
 export const DRAG_LIFT_HEIGHT = 0.4;
 

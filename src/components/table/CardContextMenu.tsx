@@ -6,13 +6,18 @@ export function CardContextMenu() {
     state.cardContextMenu ? state.cardInstances[state.cardContextMenu.instanceId] : undefined,
   );
   const setFaceUp = useTableStore((state) => state.setFaceUp);
-  const rotateInstance = useTableStore((state) => state.rotateInstance);
-  const removeInstance = useTableStore((state) => state.removeInstance);
-  const returnCardToHand = useTableStore((state) => state.returnCardToHand);
+  const rotateInstances = useTableStore((state) => state.rotateInstances);
+  const removeInstances = useTableStore((state) => state.removeInstances);
+  const moveCardsToHand = useTableStore((state) => state.moveCardsToHand);
+  const moveCardsToMainDeckTop = useTableStore((state) => state.moveCardsToMainDeckTop);
+  const moveCardsToMainDeckBottom = useTableStore((state) => state.moveCardsToMainDeckBottom);
+  const moveCardsToGraveyard = useTableStore((state) => state.moveCardsToGraveyard);
+  const moveCardsToBanished = useTableStore((state) => state.moveCardsToBanished);
   const closeCardContextMenu = useTableStore((state) => state.closeCardContextMenu);
 
   if (!contextMenu || !instance) return null;
 
+  const id = instance.instanceId;
   const runAndClose = (action: () => void) => {
     action();
     closeCardContextMenu();
@@ -29,41 +34,42 @@ export function CardContextMenu() {
         <button
           className="card-context-menu-item"
           disabled={instance.faceUp}
-          onClick={() => runAndClose(() => setFaceUp(instance.instanceId, true))}
+          onClick={() => runAndClose(() => setFaceUp([id], true))}
         >
           表向きにする
         </button>
         <button
           className="card-context-menu-item"
           disabled={!instance.faceUp}
-          onClick={() => runAndClose(() => setFaceUp(instance.instanceId, false))}
+          onClick={() => runAndClose(() => setFaceUp([id], false))}
         >
           裏向きにする
         </button>
         <div className="card-context-menu-divider" />
-        <button
-          className="card-context-menu-item"
-          onClick={() => runAndClose(() => rotateInstance(instance.instanceId, 'right'))}
-        >
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => rotateInstances([id], 'right'))}>
           右へ90度回転
         </button>
-        <button
-          className="card-context-menu-item"
-          onClick={() => runAndClose(() => rotateInstance(instance.instanceId, 'left'))}
-        >
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => rotateInstances([id], 'left'))}>
           左へ90度回転
         </button>
         <div className="card-context-menu-divider" />
-        <button
-          className="card-context-menu-item"
-          onClick={() => runAndClose(() => returnCardToHand(instance.instanceId))}
-        >
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToHand([id]))}>
           手札へ戻す
         </button>
-        <button
-          className="card-context-menu-item"
-          onClick={() => runAndClose(() => removeInstance(instance.instanceId))}
-        >
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToMainDeckTop([id]))}>
+          山札の上へ戻す
+        </button>
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToMainDeckBottom([id]))}>
+          山札の下へ戻す
+        </button>
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToGraveyard([id]))}>
+          墓地へ送る
+        </button>
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => moveCardsToBanished([id]))}>
+          除外する
+        </button>
+        <div className="card-context-menu-divider" />
+        <button className="card-context-menu-item" onClick={() => runAndClose(() => removeInstances([id]))}>
           テーブルから取り除く
         </button>
         <button className="card-context-menu-item" onClick={closeCardContextMenu}>
