@@ -7,6 +7,7 @@ import {
   CAMERA_MAX_DISTANCE,
   CAMERA_MAX_POLAR_ANGLE,
   CAMERA_MIN_DISTANCE,
+  CAMERA_MIN_POLAR_ANGLE,
   CAMERA_TARGET,
   CAMERA_TOP_POLAR_ANGLE,
   CAMERA_VIEW_OBLIQUE_POSITION,
@@ -84,7 +85,7 @@ export function CameraRig({ controlsRef, enabled, minDistance, maxDistance, view
       minDistance={minDistance ?? CAMERA_MIN_DISTANCE}
       maxDistance={maxDistance ?? CAMERA_MAX_DISTANCE}
       maxPolarAngle={isTop ? CAMERA_TOP_POLAR_ANGLE : CAMERA_MAX_POLAR_ANGLE}
-      minPolarAngle={isTop ? CAMERA_TOP_POLAR_ANGLE : 0.15}
+      minPolarAngle={isTop ? CAMERA_TOP_POLAR_ANGLE : CAMERA_MIN_POLAR_ANGLE}
       mouseButtons={MOUSE_BUTTONS}
     />
   );

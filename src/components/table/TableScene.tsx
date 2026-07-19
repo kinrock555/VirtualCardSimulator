@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { TableTheme } from '../../config/tableThemes';
 import type { RoomEnvironment } from '../../config/roomEnvironments';
+import type { TableTypeId } from '../../config/tableTypes';
 import type { CameraView, GraphicsQuality } from '../../store/useTableStore';
 import { TableSurface } from './TableSurface';
 import { CardLayer } from './CardLayer';
@@ -19,6 +20,8 @@ type TableSceneProps = {
   cameraResetToken: number;
   /** Defaults to 'standard' for the main-menu background reuse (which doesn't pass this prop). */
   graphicsQuality?: GraphicsQuality;
+  /** Defaults to 'standard' for callers that don't pass it. */
+  tableType?: TableTypeId;
 };
 
 export function TableScene({
@@ -29,6 +32,7 @@ export function TableScene({
   cameraView,
   cameraResetToken,
   graphicsQuality = 'standard',
+  tableType = 'standard',
 }: TableSceneProps) {
   const isLight = graphicsQuality === 'light';
   const shadowMapSize = isLight ? 1024 : 2048;
@@ -46,6 +50,7 @@ export function TableScene({
       />
       <directionalLight
         position={[6, 10, 4]}
+        color={roomEnvironment.directionalLightColor}
         intensity={roomEnvironment.directionalLightIntensity}
         castShadow={!isLight}
         shadow-mapSize-width={shadowMapSize}
@@ -55,9 +60,13 @@ export function TableScene({
         shadow-camera-top={8}
         shadow-camera-bottom={-8}
       />
+      {/* Soft fill light from the opposite side - never casts a shadow (cheap:
+          no second shadow map), just lifts the shadow side of cards/the table
+          so the single directional light's shadows don't read as too harsh. */}
+      <directionalLight position={[-6, 5, -4]} intensity={roomEnvironment.directionalLightIntensity * 0.22} castShadow={false} />
 
       <RoomEnvironmentRenderer environment={roomEnvironment} quality={graphicsQuality} />
-      <TableSurface theme={theme} />
+      <TableSurface theme={theme} tableType={tableType} />
       <CardLayer />
       <CameraRig
         controlsRef={controlsRef}

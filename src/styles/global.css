@@ -771,7 +771,10 @@ button {
   top: var(--header-height);
   right: 20px;
   bottom: var(--panel-edge-margin);
-  width: clamp(260px, 25vw, 420px);
+  /* Enlarged from clamp(260px,25vw,420px) - noticeably bigger on typical
+     screens while still shrinking safely on narrow windows and capping out
+     on very wide ones. */
+  width: clamp(300px, 34vw, 620px);
   z-index: 20;
   background: rgba(20, 22, 28, 0.85);
   border: 1px solid var(--color-border-strong);
@@ -822,16 +825,8 @@ button {
 .card-preview-overlay-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   width: 100%;
   gap: 8px;
-}
-
-.card-preview-overlay-title {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 .card-preview-collapse-button {
@@ -843,6 +838,8 @@ button {
   cursor: pointer;
   padding: 4px 8px;
   border-radius: 6px;
+  /* Stays pinned to the right whether or not the peek badge sibling is present. */
+  margin-left: auto;
 }
 
 .card-preview-collapse-button:hover {
@@ -972,13 +969,15 @@ button {
 
 /* ---------- Hand panel (2D, docked below the 3D field) ---------- */
 
+/* No panel background/border/shadow here by design - only the cards
+   themselves should read as present, floating directly over the 3D field
+   (see each .hand-card's own shadow/border below for per-card definition
+   instead of one big background rectangle). */
 .hand-panel {
   position: relative;
   flex: 0 0 auto;
   z-index: 25;
-  background: rgba(10, 12, 18, 0.92);
-  border-top: 2px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.4);
+  background: transparent;
   display: flex;
   flex-direction: column;
 }
@@ -987,8 +986,15 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 16px;
+}
+
+.hand-panel-title,
+.hand-panel-count {
+  /* Text-shadow substitutes for the removed panel background so the label
+     stays legible over whatever's in the 3D field behind it (bright room
+     themes, light table colors, etc). */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.6);
 }
 
 .hand-panel-title {
@@ -1014,10 +1020,11 @@ button {
   margin-left: auto;
   padding: 4px 8px;
   border-radius: 6px;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
 .hand-panel-toggle:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   color: var(--color-text);
 }
 
@@ -1231,7 +1238,7 @@ button {
   top: calc(100% + 8px);
   right: 0;
   z-index: 30;
-  width: 280px;
+  width: 320px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
   background: var(--color-bg-elevated);
@@ -1243,7 +1250,8 @@ button {
 
 .table-theme-tabs {
   display: flex;
-  gap: 6px;
+  flex-wrap: wrap;
+  gap: 4px;
   margin-bottom: 12px;
   border-bottom: 1px solid var(--color-border);
   padding-bottom: 10px;
@@ -1252,11 +1260,12 @@ button {
 .table-theme-tab {
   appearance: none;
   flex: 1;
+  min-width: 56px;
   background: transparent;
   border: 1px solid var(--color-border-strong);
   color: var(--color-text-muted);
-  font-size: 13px;
-  padding: 6px 10px;
+  font-size: 11.5px;
+  padding: 5px 4px;
   border-radius: 6px;
   cursor: pointer;
 }

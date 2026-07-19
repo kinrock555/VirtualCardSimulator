@@ -75,6 +75,10 @@ export const CAMERA_TARGET: [number, number, number] = [0, 0, 0];
 export const CAMERA_MIN_DISTANCE = 4;
 export const CAMERA_MAX_DISTANCE = 18;
 export const CAMERA_MAX_POLAR_ANGLE = Math.PI / 2 - 0.05; // stay above the table plane
+// Oblique view's lower bound - stops the camera from swinging all the way
+// up to (and past) a near-top-down angle while "oblique" is selected; 'top'
+// view uses its own separate, much smaller CAMERA_TOP_POLAR_ANGLE instead.
+export const CAMERA_MIN_POLAR_ANGLE = 0.15;
 
 // Offline-only camera overrides - the play screen now has a room around the
 // table, so it uses a slightly wider default framing and zoom range while
@@ -132,3 +136,18 @@ export const PLAYER_DECK_ORIGINS: [{ x: number; z: number }, { x: number; z: num
   computeSeatDeckOrigin('near'), // player 1
   computeSeatDeckOrigin('far'), // player 2
 ];
+
+// ---- Table shape variants (round / casino) ----
+// Card placement bounds (clampToTable, in shared/tableLogic.ts) stay the same
+// rectangular box for every table type - it's shared with the online server,
+// so it's deliberately left untouched. Both new shapes are sized generously
+// enough that normal play (and the existing deck/legacy-conversion origins
+// above) still land visually on the table surface.
+export const ROUND_TABLE_RADIUS = 7;
+export const ROUND_TABLE_FRAME_RADIUS = ROUND_TABLE_RADIUS + TABLE_FRAME_MARGIN;
+export const ROUND_TABLE_LEG_RADIUS = 0.45;
+// The casino table reuses the exact standard rectangular playmat/boundary
+// line (so it needs no special-cased clamping) - only its outer frame is a
+// large-radius rounded rectangle (an oval/stadium silhouette) instead of the
+// standard table's small-radius RoundedBox corners.
+export const CASINO_FRAME_CORNER_RADIUS = 3.2;

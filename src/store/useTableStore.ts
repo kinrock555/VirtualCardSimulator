@@ -23,6 +23,7 @@ import { loadFromStorage, saveToStorage } from '../lib/storage';
 import { STORAGE_KEYS } from '../lib/storageKeys';
 import { DEFAULT_TABLE_THEME_ID } from '../config/tableThemes';
 import { DEFAULT_ROOM_ENVIRONMENT_ID } from '../config/roomEnvironments';
+import { DEFAULT_TABLE_TYPE_ID } from '../config/tableTypes';
 
 type CardContextMenuState = { instanceId: string; x: number; y: number };
 type StackContextMenuState = { stackId: string; x: number; y: number };
@@ -39,6 +40,14 @@ export type CameraView = 'oblique' | 'top';
 type HandFieldDragState = { instanceId: string; x: number; z: number; visible: boolean; faceUp: boolean };
 
 export type GraphicsQuality = 'light' | 'standard';
+
+/** Allowed loupe zoom levels - deliberately a small fixed set (not a free slider) so the setting UI stays simple. */
+export type MagnifierZoom = 1.25 | 1.5 | 1.75 | 2;
+export const MAGNIFIER_ZOOM_OPTIONS: MagnifierZoom[] = [1.25, 1.5, 1.75, 2];
+// Previously defaulted to 2.5 - strong enough that only a small fraction of
+// the card was visible at once, which made reading text harder rather than
+// easier. 1.5 keeps more context on-screen while still enlarging detail.
+export const DEFAULT_MAGNIFIER_ZOOM: MagnifierZoom = 1.5;
 
 type TableState = {
   deckId: string | null;
@@ -112,10 +121,14 @@ type TableState = {
 
   /** Whether the card-preview loupe (mouse-follow magnifier) is enabled. */
   loupeEnabled: boolean;
+  /** Loupe magnification level - one of MAGNIFIER_ZOOM_OPTIONS. */
+  magnifierZoom: MagnifierZoom;
   /** 3D rendering quality preset - trims shadow resolution/decorative room objects when 'light'. */
   graphicsQuality: GraphicsQuality;
   /** Currently-selected custom playmat image id (see lib/customPlaymatStorage.ts), or null for the standard theme-generated playmat. */
   selectedPlaymatId: string | null;
+  /** Selected table shape (see config/tableTypes.ts) - independent of the table color theme. */
+  selectedTableTypeId: string;
 
   /**
    * Ephemeral (not persisted) - set by MainMenuPage's "前回の続きから" button
@@ -205,8 +218,10 @@ type TableState = {
   exitFocusMode: () => void;
 
   setLoupeEnabled: (enabled: boolean) => void;
+  setMagnifierZoom: (zoom: MagnifierZoom) => void;
   setGraphicsQuality: (quality: GraphicsQuality) => void;
   setSelectedPlaymatId: (playmatId: string | null) => void;
+  setTableType: (tableTypeId: string) => void;
 
   getInstanceById: (instanceId: string) => CardInstance | undefined;
   getStackById: (stackId: string) => CardStack | undefined;
@@ -315,6 +330,8 @@ const initialRoomEnvironmentId = loadFromStorage<string>(
 );
 const initialHandPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.handPanelCollapsed, false);
 const initialCameraView = loadFromStorage<CameraView>(STORAGE_KEYS.cameraView, 'oblique');
+const initialMagnifierZoom = loadFromStorage<MagnifierZoom>(STORAGE_KEYS.magnifierZoom, DEFAULT_MAGNIFIER_ZOOM);
+const initialSelectedTableTypeId = loadFromStorage<string>(STORAGE_KEYS.tableType, DEFAULT_TABLE_TYPE_ID);
 const initialLeftPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.leftPanelCollapsed, false);
 const initialPreviewPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.previewPanelCollapsed, false);
 const initialTopBarCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.topBarCollapsed, false);
@@ -368,8 +385,10 @@ export const useTableStore = create<TableState>((set, get) => ({
   focusModeSnapshot: null,
 
   loupeEnabled: initialLoupeEnabled,
+  magnifierZoom: initialMagnifierZoom,
   graphicsQuality: initialGraphicsQuality,
   selectedPlaymatId: initialSelectedPlaymatId,
+  selectedTableTypeId: initialSelectedTableTypeId,
 
   pendingBoardToLoad: null,
   setPendingBoardToLoad: (snapshot) => set({ pendingBoardToLoad: snapshot }),
@@ -1280,6 +1299,11 @@ export const useTableStore = create<TableState>((set, get) => ({
     set({ loupeEnabled: enabled });
   },
 
+  setMagnifierZoom: (zoom) => {
+    saveToStorage(STORAGE_KEYS.magnifierZoom, zoom);
+    set({ magnifierZoom: zoom });
+  },
+
   setGraphicsQuality: (quality) => {
     saveToStorage(STORAGE_KEYS.graphicsQuality, quality);
     set({ graphicsQuality: quality });
@@ -1288,6 +1312,11 @@ export const useTableStore = create<TableState>((set, get) => ({
   setSelectedPlaymatId: (playmatId) => {
     saveToStorage(STORAGE_KEYS.selectedPlaymatId, playmatId);
     set({ selectedPlaymatId: playmatId });
+  },
+
+  setTableType: (tableTypeId) => {
+    saveToStorage(STORAGE_KEYS.tableType, tableTypeId);
+    set({ selectedTableTypeId: tableTypeId });
   },
 
   getInstanceById: (instanceId) => get().cardInstances[instanceId],

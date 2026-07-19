@@ -45,6 +45,47 @@ export const TABLE_THEMES: TableTheme[] = [
     backgroundColor: '#020203',
     previewPath: swatchDataUri('#3d4048', '#020203'),
   },
+  // ---- Lighter, more approachable colors added alongside the original 3 ----
+  {
+    id: 'ivory',
+    name: 'アイボリー',
+    tableColor: '#e8dcc4',
+    surfacePattern: 'felt',
+    backgroundColor: '#181510',
+    previewPath: swatchDataUri('#e8dcc4', '#181510'),
+  },
+  {
+    id: 'light-blue',
+    name: 'ライトブルー',
+    tableColor: '#a9c9e6',
+    surfacePattern: 'weave',
+    backgroundColor: '#0d141d',
+    previewPath: swatchDataUri('#a9c9e6', '#0d141d'),
+  },
+  {
+    id: 'mint-green',
+    name: 'ミントグリーン',
+    tableColor: '#a7ddc2',
+    surfacePattern: 'felt',
+    backgroundColor: '#0b1712',
+    previewPath: swatchDataUri('#a7ddc2', '#0b1712'),
+  },
+  {
+    id: 'light-pink',
+    name: 'ライトピンク',
+    tableColor: '#eec9d3',
+    surfacePattern: 'weave',
+    backgroundColor: '#191012',
+    previewPath: swatchDataUri('#eec9d3', '#191012'),
+  },
+  {
+    id: 'light-wood',
+    name: 'ライトウッド',
+    tableColor: '#d9b988',
+    surfacePattern: 'planks',
+    backgroundColor: '#171208',
+    previewPath: swatchDataUri('#d9b988', '#171208'),
+  },
 ];
 
 export const DEFAULT_TABLE_THEME_ID = TABLE_THEMES[1].id; // classic-green matches the original look

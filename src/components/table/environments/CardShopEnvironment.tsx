@@ -38,13 +38,14 @@ export function CardShopEnvironment({
       </mesh>
 
       {/* Card shelf along the back wall - a frame with rows of abstract product
-          boxes (one InstancedMesh draw call for all 24, not 24 separate meshes). */}
+          boxes (one InstancedMesh draw call for all 24, not 24 separate meshes).
+          Well outside TableScene's shadow-camera frustum, so no castShadow here. */}
       <group position={[-14, floorY, -21.4]}>
-        <mesh position={[0, 2.5, 0]} castShadow={!isLight} raycast={noRaycast}>
+        <mesh position={[0, 2.5, 0]} raycast={noRaycast}>
           <boxGeometry args={[8, 5, 0.4]} />
           <meshStandardMaterial color="#d8d3c6" roughness={0.85} />
         </mesh>
-        <Instances limit={24} castShadow={!isLight}>
+        <Instances limit={24}>
           <boxGeometry args={[0.9, 0.7, 0.3]} />
           <meshStandardMaterial roughness={0.6} />
           {[0.9, 2.0, 3.1, 4.2].map((y, row) =>
@@ -59,9 +60,9 @@ export function CardShopEnvironment({
         </Instances>
       </group>
 
-      {/* Register counter near the entrance side. */}
+      {/* Register counter near the entrance side - outside the shadow frustum. */}
       <group position={[-19, floorY, -15]}>
-        <mesh position={[0, 0.55, 0]} castShadow={!isLight} raycast={noRaycast}>
+        <mesh position={[0, 0.55, 0]} raycast={noRaycast}>
           <boxGeometry args={[2.4, 1.1, 0.9]} />
           <meshStandardMaterial color="#c7c2b4" roughness={0.7} />
         </mesh>
@@ -82,10 +83,11 @@ export function CardShopEnvironment({
         ))}
 
       {/* Other play tables (with simple chairs) scattered around, suggesting a
-          wider shop floor - trimmed to just one in light-quality mode. */}
+          wider shop floor - trimmed to just one in light-quality mode, and
+          never shadow-casting (outside the shadow frustum). */}
       {otherTables.map(([x, z]) => (
         <group key={`${x}-${z}`} position={[x, floorY, z]}>
-          <mesh position={[0, 0.95, 0]} castShadow={!isLight} raycast={noRaycast}>
+          <mesh position={[0, 0.95, 0]} raycast={noRaycast}>
             <boxGeometry args={[3, 0.15, 1.8]} />
             <meshStandardMaterial color="#c7c2b4" roughness={0.7} />
           </mesh>

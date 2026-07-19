@@ -10,6 +10,8 @@ export type RoomEnvironment = {
   backgroundColor: string;
   ambientLightIntensity: number;
   directionalLightIntensity: number;
+  /** Tints the main directional light's color temperature per theme (e.g. warm for Home, neutral-white for Card Shop). Defaults to plain white if omitted. */
+  directionalLightColor: string;
 };
 
 function roomSwatchDataUri(floorColor: string, wallColor: string, backgroundColor: string): string {
@@ -34,6 +36,7 @@ export const ROOM_ENVIRONMENTS: RoomEnvironment[] = [
     backgroundColor: '#1a1c22',
     ambientLightIntensity: 0.9,
     directionalLightIntensity: 1.3,
+    directionalLightColor: '#ffffff',
   },
   {
     id: 'home',
@@ -45,6 +48,7 @@ export const ROOM_ENVIRONMENTS: RoomEnvironment[] = [
     backgroundColor: '#4a3d2c',
     ambientLightIntensity: 1.0,
     directionalLightIntensity: 1.25,
+    directionalLightColor: '#ffe9cf', // slightly warm, lamp-like
   },
   {
     id: 'casino',
@@ -56,6 +60,7 @@ export const ROOM_ENVIRONMENTS: RoomEnvironment[] = [
     backgroundColor: '#100a08',
     ambientLightIntensity: 0.75,
     directionalLightIntensity: 1.15,
+    directionalLightColor: '#fff2df', // dim overall, but a warm spotlight-like tint keeps the table readable
   },
   {
     id: 'card-shop',
@@ -67,6 +72,7 @@ export const ROOM_ENVIRONMENTS: RoomEnvironment[] = [
     backgroundColor: '#7a7d85',
     ambientLightIntensity: 1.15,
     directionalLightIntensity: 1.4,
+    directionalLightColor: '#f5f8ff', // neutral-white, bright storefront lighting
   },
 ];
 

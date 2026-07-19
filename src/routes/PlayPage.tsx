@@ -22,6 +22,7 @@ import { useTableStore } from '../store/useTableStore';
 import { PLAY_CAMERA_INITIAL_POSITION } from '../lib/tableConstants';
 import { getTableThemeById } from '../config/tableThemes';
 import { getRoomEnvironmentById } from '../config/roomEnvironments';
+import { getTableTypeById } from '../config/tableTypes';
 
 export function PlayPage() {
   const { deckId } = useParams<{ deckId: string }>();
@@ -55,6 +56,7 @@ export function PlayPage() {
   const enterFocusMode = useTableStore((state) => state.enterFocusMode);
   const exitFocusMode = useTableStore((state) => state.exitFocusMode);
   const graphicsQuality = useTableStore((state) => state.graphicsQuality);
+  const selectedTableTypeId = useTableStore((state) => state.selectedTableTypeId);
 
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [cameraResetToken, setCameraResetToken] = useState(0);
@@ -67,6 +69,7 @@ export function PlayPage() {
   const deck = deckId ? getDeckById(deckId) : undefined;
   const theme = getTableThemeById(selectedThemeId);
   const roomEnvironment = getRoomEnvironmentById(selectedRoomEnvironmentId);
+  const tableType = getTableTypeById(selectedTableTypeId);
   const isMultiplayer = players.length > 1;
   const activePlayer = isMultiplayer ? players[currentPlayerIndex] : undefined;
   const opponentPlayer = isMultiplayer ? players[(currentPlayerIndex + 1) % players.length] : undefined;
@@ -197,6 +200,7 @@ export function PlayPage() {
                 cameraView={cameraView}
                 cameraResetToken={cameraResetToken}
                 graphicsQuality={graphicsQuality}
+                tableType={tableType.id}
               />
             </Suspense>
           </Canvas>

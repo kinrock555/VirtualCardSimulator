@@ -102,12 +102,14 @@ export function RoomShell({ floorColor, wallColor, children }: RoomShellProps) {
         <meshStandardMaterial color="#dff0ff" emissive="#bfe3ff" emissiveIntensity={0.45} />
       </mesh>
 
-      {/* Small ceiling-mounted light fixture - gives "天井照明" without the
-          full ceiling plane that broke rendering under software WebGL. */}
-      <mesh position={[0, ROOM_FLOOR_Y + ROOM_WALL_HEIGHT - 0.15, 0]} raycast={noRaycast}>
-        <cylinderGeometry args={[0.5, 0.5, 0.08, 16]} />
-        <meshStandardMaterial color="#fff6df" emissive="#fff3cf" emissiveIntensity={0.6} />
-      </mesh>
+      {/* No literal ceiling-mounted light fixture mesh: with no ceiling plane
+          for it to actually mount to (see the no-ceiling comment above), a
+          floating disc directly over the table center was exactly what
+          became visible - and distracting - once the camera looked straight
+          down in the top view. "Ceiling lighting" is delivered purely via
+          the real hemisphereLight/directionalLight in TableScene.tsx, which
+          (having no mesh representation) can never look wrong from any
+          camera angle. */}
 
       {children}
     </group>

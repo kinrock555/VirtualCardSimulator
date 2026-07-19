@@ -13,6 +13,8 @@ export const STORAGE_KEYS = {
   previewPanelCollapsed: 'vct.previewPanelCollapsed.v1',
   topBarCollapsed: 'vct.topBarCollapsed.v1',
   loupeEnabled: 'vct.loupeEnabled.v1',
+  magnifierZoom: 'vct.magnifierZoom.v1',
   graphicsQuality: 'vct.graphicsQuality.v1',
   selectedPlaymatId: 'vct.selectedPlaymatId.v1',
+  tableType: 'vct.tableType.v1',
 } as const;

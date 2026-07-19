@@ -3,7 +3,6 @@ import { useCardMasterStore } from '../../store/useCardMasterStore';
 import { useTableStore } from '../../store/useTableStore';
 import { getCardBackUrl } from '../../lib/cardLoader';
 
-const LOUPE_ZOOM = 2.5;
 const LOUPE_WIDTH = 180;
 const LOUPE_HEIGHT = 252; // 5:7, matching the card aspect ratio
 
@@ -15,6 +14,7 @@ export function CardPreviewOverlay() {
   const peekingInstanceId = useTableStore((state) => state.peekingInstanceId);
   const endPeekCard = useTableStore((state) => state.endPeekCard);
   const loupeEnabled = useTableStore((state) => state.loupeEnabled);
+  const magnifierZoom = useTableStore((state) => state.magnifierZoom);
   const previewPanelCollapsed = useTableStore((state) => state.previewPanelCollapsed);
   const setPreviewPanelCollapsed = useTableStore((state) => state.setPreviewPanelCollapsed);
   const getCardById = useCardMasterStore((state) => state.getCardById);
@@ -48,11 +48,11 @@ export function CardPreviewOverlay() {
       setLoupe(null);
       return;
     }
-    const bgWidth = rect.width * LOUPE_ZOOM;
-    const bgHeight = rect.height * LOUPE_ZOOM;
+    const bgWidth = rect.width * magnifierZoom;
+    const bgHeight = rect.height * magnifierZoom;
     // Clamped so the lens never scrolls past the image's own edges - it always shows real pixels, never blank space.
-    const bgX = Math.max(-(bgWidth - LOUPE_WIDTH), Math.min(0, -(relX * LOUPE_ZOOM - LOUPE_WIDTH / 2)));
-    const bgY = Math.max(-(bgHeight - LOUPE_HEIGHT), Math.min(0, -(relY * LOUPE_ZOOM - LOUPE_HEIGHT / 2)));
+    const bgX = Math.max(-(bgWidth - LOUPE_WIDTH), Math.min(0, -(relX * magnifierZoom - LOUPE_WIDTH / 2)));
+    const bgY = Math.max(-(bgHeight - LOUPE_HEIGHT), Math.min(0, -(relY * magnifierZoom - LOUPE_HEIGHT / 2)));
     const lensLeft = Math.max(0, Math.min(rect.width - LOUPE_WIDTH, relX - LOUPE_WIDTH / 2));
     const lensTop = Math.max(0, Math.min(rect.height - LOUPE_HEIGHT, relY - LOUPE_HEIGHT / 2));
     setLoupe({ x: lensLeft, y: lensTop, bgX, bgY, bgWidth, bgHeight });
@@ -74,11 +74,10 @@ export function CardPreviewOverlay() {
   return (
     <div className="card-preview-overlay">
       <div className="card-preview-overlay-header">
-        {isPeeking ? (
-          <span className="card-preview-peek-badge">自分だけ確認中</span>
-        ) : (
-          <span className="card-preview-overlay-title">カードプレビュー</span>
-        )}
+        {/* No plain "カードプレビュー" label here - the enlarged card image
+            itself is the primary content, so header chrome is limited to
+            the peek-state badge (when relevant) and the collapse button. */}
+        {isPeeking && <span className="card-preview-peek-badge">自分だけ確認中</span>}
         <button type="button" className="card-preview-collapse-button" onClick={() => setPreviewPanelCollapsed(true)} title="たたむ">
           ▶
         </button>

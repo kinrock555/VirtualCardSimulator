@@ -39,14 +39,15 @@ export function CasinoEnvironment({
       </mesh>
 
       {/* Two distant tables (simple box top + cylinder legs), suggesting a
-          wider card room - skipped in light-quality mode. */}
+          wider card room - skipped in light-quality mode, and never
+          shadow-casting (well outside TableScene's shadow-camera frustum). */}
       {!isLight &&
         [
           [-18, -15],
           [18, -13],
         ].map(([x, z]) => (
           <group key={`${x}-${z}`} position={[x, floorY, z]}>
-            <mesh position={[0, 1.0, 0]} castShadow raycast={noRaycast}>
+            <mesh position={[0, 1.0, 0]} raycast={noRaycast}>
               <boxGeometry args={[3.2, 0.15, 2]} />
               <meshStandardMaterial color="#3a1218" roughness={0.7} />
             </mesh>
