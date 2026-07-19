@@ -1,4 +1,5 @@
 import { useTableStore } from '../../store/useTableStore';
+import { useUiStore } from '../../store/useUiStore';
 
 export function CardContextMenu() {
   const contextMenu = useTableStore((state) => state.cardContextMenu);
@@ -12,6 +13,9 @@ export function CardContextMenu() {
   const moveCardsToMainDeckTop = useTableStore((state) => state.moveCardsToMainDeckTop);
   const moveCardsToMainDeckBottom = useTableStore((state) => state.moveCardsToMainDeckBottom);
   const closeCardContextMenu = useTableStore((state) => state.closeCardContextMenu);
+  const canPeekCard = useTableStore((state) => state.canPeekCard);
+  const beginPeekCard = useTableStore((state) => state.beginPeekCard);
+  const showNotification = useUiStore((state) => state.showNotification);
 
   if (!contextMenu || !instance) return null;
 
@@ -43,6 +47,22 @@ export function CardContextMenu() {
         >
           裏向きにする
         </button>
+        {!instance.faceUp && (
+          <button
+            className="card-context-menu-item"
+            onClick={() =>
+              runAndClose(() => {
+                if (canPeekCard(id)) {
+                  beginPeekCard(id);
+                } else {
+                  showNotification('このカードは確認できません');
+                }
+              })
+            }
+          >
+            自分だけ確認
+          </button>
+        )}
         <div className="card-context-menu-divider" />
         <button className="card-context-menu-item" onClick={() => runAndClose(() => rotateInstances([id], 'right'))}>
           右へ90度回転

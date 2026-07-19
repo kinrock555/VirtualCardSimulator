@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { loadFromStorage, saveToStorage } from '../../lib/storage';
-import { STORAGE_KEYS } from '../../lib/storageKeys';
+import { useTableStore } from '../../store/useTableStore';
 
 type GuideEntry = {
   label: string;
@@ -25,19 +23,13 @@ const GUIDE_ENTRIES: GuideEntry[] = [
 ];
 
 export function OperationGuidePanel() {
-  const [isOpen, setIsOpenState] = useState(() => !loadFromStorage<boolean>(STORAGE_KEYS.operationGuideCollapsed, false));
-
-  const setIsOpen = (updater: (prev: boolean) => boolean) => {
-    setIsOpenState((prev) => {
-      const next = updater(prev);
-      saveToStorage(STORAGE_KEYS.operationGuideCollapsed, !next);
-      return next;
-    });
-  };
+  const collapsed = useTableStore((state) => state.leftPanelCollapsed);
+  const setLeftPanelCollapsed = useTableStore((state) => state.setLeftPanelCollapsed);
+  const isOpen = !collapsed;
 
   return (
     <div className={`operation-guide-panel${isOpen ? '' : ' collapsed'}`}>
-      <button className="operation-guide-header" onClick={() => setIsOpen((prev) => !prev)}>
+      <button className="operation-guide-header" onClick={() => setLeftPanelCollapsed(isOpen)}>
         <span>操作方法</span>
         <span className="operation-guide-toggle">{isOpen ? '▲' : '▼'}</span>
       </button>

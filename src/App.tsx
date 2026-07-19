@@ -4,6 +4,7 @@ import { BoxPage } from './routes/BoxPage';
 import { DeckEditPage } from './routes/DeckEditPage';
 import { PlayPage } from './routes/PlayPage';
 import { PlaySetupPage } from './routes/PlaySetupPage';
+import { SettingsPage } from './routes/SettingsPage';
 import { OnlineHomePage } from './routes/OnlineHomePage';
 import { OnlineCreatePage } from './routes/OnlineCreatePage';
 import { OnlineJoinPage } from './routes/OnlineJoinPage';
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/decks" element={<DeckEditPage />} />
         <Route path="/play/:deckId" element={<PlayPage />} />
         <Route path="/play-setup" element={<PlaySetupPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/online" element={<OnlineHomePage />} />
         <Route path="/online/create" element={<OnlineCreatePage />} />
         <Route path="/online/join" element={<OnlineJoinPage />} />

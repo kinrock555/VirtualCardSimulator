@@ -38,6 +38,8 @@ export type CameraView = 'oblique' | 'top';
  */
 type HandFieldDragState = { instanceId: string; x: number; z: number; visible: boolean; faceUp: boolean };
 
+export type GraphicsQuality = 'light' | 'standard';
+
 type TableState = {
   deckId: string | null;
   /** All card instances for the current session, keyed by instanceId. */
@@ -89,6 +91,40 @@ type TableState = {
   awaitingHandReveal: boolean;
   /** instanceId -> owning playerId ('shared' in sharedDeck mode). Only used so resetTable can rebuild per-player decks separately instead of merging them; never persisted to CardInstance itself. */
   deckOwnerByInstanceId: Record<string, string>;
+
+  /**
+   * Ephemeral (not persisted, never included in board saves) - the instanceId
+   * of a face-down card the current player is privately peeking at via the
+   * card-context-menu's "自分だけ確認" action. Non-null only while that
+   * temporary reveal is showing; the card itself stays face-down the whole
+   * time (peeking never touches `faceUp`).
+   */
+  peekingInstanceId: string | null;
+
+  /** UI panel collapse state - each independently toggleable and persisted. */
+  leftPanelCollapsed: boolean;
+  previewPanelCollapsed: boolean;
+  topBarCollapsed: boolean;
+  /** Ephemeral (not persisted) - true while "集中モード" is active. */
+  focusMode: boolean;
+  /** Ephemeral - the 4 panels' collapsed state as they were just before entering focus mode, so exiting restores them exactly (never written to localStorage - focus mode itself is never a persisted preference). */
+  focusModeSnapshot: { left: boolean; preview: boolean; topBar: boolean; hand: boolean } | null;
+
+  /** Whether the card-preview loupe (mouse-follow magnifier) is enabled. */
+  loupeEnabled: boolean;
+  /** 3D rendering quality preset - trims shadow resolution/decorative room objects when 'light'. */
+  graphicsQuality: GraphicsQuality;
+  /** Currently-selected custom playmat image id (see lib/customPlaymatStorage.ts), or null for the standard theme-generated playmat. */
+  selectedPlaymatId: string | null;
+
+  /**
+   * Ephemeral (not persisted) - set by MainMenuPage's "前回の続きから" button
+   * just before navigating to /play/:deckId, consumed once by PlayPage on
+   * mount to restore a previously-saved board instead of starting a fresh
+   * session. Takes priority over `pendingSessionConfig`/plain deck loading.
+   */
+  pendingBoardToLoad: BoardSnapshot | null;
+  setPendingBoardToLoad: (snapshot: BoardSnapshot | null) => void;
 
   /** Expands a deck's card entries into a fresh main deck, plus empty graveyard/banished piles. */
   loadDeck: (deck: DeckData) => void;
@@ -155,6 +191,22 @@ type TableState = {
   setHandPanelCollapsed: (collapsed: boolean) => void;
   setCameraView: (view: CameraView) => void;
   toggleCameraView: () => void;
+
+  /** True if the current active player (or anyone, in single-player) is allowed to peek at this face-down card. */
+  canPeekCard: (instanceId: string) => boolean;
+  /** Starts the private peek if `canPeekCard` allows it; no-op (self-guarded) otherwise. */
+  beginPeekCard: (instanceId: string) => void;
+  endPeekCard: () => void;
+
+  setLeftPanelCollapsed: (collapsed: boolean) => void;
+  setPreviewPanelCollapsed: (collapsed: boolean) => void;
+  setTopBarCollapsed: (collapsed: boolean) => void;
+  enterFocusMode: () => void;
+  exitFocusMode: () => void;
+
+  setLoupeEnabled: (enabled: boolean) => void;
+  setGraphicsQuality: (quality: GraphicsQuality) => void;
+  setSelectedPlaymatId: (playmatId: string | null) => void;
 
   getInstanceById: (instanceId: string) => CardInstance | undefined;
   getStackById: (stackId: string) => CardStack | undefined;
@@ -263,6 +315,20 @@ const initialRoomEnvironmentId = loadFromStorage<string>(
 );
 const initialHandPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.handPanelCollapsed, false);
 const initialCameraView = loadFromStorage<CameraView>(STORAGE_KEYS.cameraView, 'oblique');
+const initialLeftPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.leftPanelCollapsed, false);
+const initialPreviewPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.previewPanelCollapsed, false);
+const initialTopBarCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.topBarCollapsed, false);
+const initialLoupeEnabled = loadFromStorage<boolean>(STORAGE_KEYS.loupeEnabled, true);
+const initialGraphicsQuality = loadFromStorage<GraphicsQuality>(STORAGE_KEYS.graphicsQuality, 'standard');
+const initialSelectedPlaymatId = loadFromStorage<string | null>(STORAGE_KEYS.selectedPlaymatId, null);
+
+/** Player-1 (near edge) faces -Z and player-2 (far edge) faces +Z, so a
+ * card placed by player-2 should start rotated 180 degrees to face them
+ * instead of player-1. Single-player/no-active-player sessions always use 0,
+ * matching the pre-existing look exactly. */
+function getInitialCardRotationForPlayer(playerId: string | null): 0 | 180 {
+  return playerId === 'player-2' ? 180 : 0;
+}
 
 export const useTableStore = create<TableState>((set, get) => ({
   deckId: null,
@@ -293,6 +359,20 @@ export const useTableStore = create<TableState>((set, get) => ({
   pendingSessionConfig: null,
   awaitingHandReveal: false,
   deckOwnerByInstanceId: {},
+  peekingInstanceId: null,
+
+  leftPanelCollapsed: initialLeftPanelCollapsed,
+  previewPanelCollapsed: initialPreviewPanelCollapsed,
+  topBarCollapsed: initialTopBarCollapsed,
+  focusMode: false,
+  focusModeSnapshot: null,
+
+  loupeEnabled: initialLoupeEnabled,
+  graphicsQuality: initialGraphicsQuality,
+  selectedPlaymatId: initialSelectedPlaymatId,
+
+  pendingBoardToLoad: null,
+  setPendingBoardToLoad: (snapshot) => set({ pendingBoardToLoad: snapshot }),
 
   loadDeck: (deck) => {
     const built = buildDeckStackInstances(deck, 'main-deck', DRAW_PILE_ORIGIN, 'player-1');
@@ -310,6 +390,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       pendingSessionConfig: null,
       awaitingHandReveal: false,
       deckOwnerByInstanceId: built.owners,
+      peekingInstanceId: null,
       selectedInstanceIds: [],
       draggingInstanceId: null,
       groupDragOffsets: null,
@@ -364,6 +445,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         hand: [],
         players: state.players.map((player) => ({ ...player, hand: [] })),
         awaitingHandReveal: false,
+        peekingInstanceId: null,
         selectedInstanceIds: [],
         draggingInstanceId: null,
         groupDragOffsets: null,
@@ -439,6 +521,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       deckOwnerByInstanceId,
       pendingSessionConfig: null,
       awaitingHandReveal: false,
+      peekingInstanceId: null,
       selectedInstanceIds: [],
       draggingInstanceId: null,
       groupDragOffsets: null,
@@ -465,6 +548,9 @@ export const useTableStore = create<TableState>((set, get) => ({
         currentPlayerIndex: index,
         hand: players[index].hand,
         awaitingHandReveal: true,
+        // A private peek is only ever meaningful for the player who opened
+        // it - switching players must always close it, no exceptions.
+        peekingInstanceId: null,
         selectedInstanceIds: [],
         draggingInstanceId: null,
         groupDragOffsets: null,
@@ -635,6 +721,9 @@ export const useTableStore = create<TableState>((set, get) => ({
       deckOwnerByInstanceId,
       pendingSessionConfig: null,
       awaitingHandReveal: false,
+      // A temporary peek is session-local UI state, never part of a saved
+      // board - always closed on load, matching "盤面保存へ、一時的な確認状態を含めない".
+      peekingInstanceId: null,
       selectedInstanceIds: [],
       draggingInstanceId: null,
       groupDragOffsets: null,
@@ -651,17 +740,23 @@ export const useTableStore = create<TableState>((set, get) => ({
 
   selectInstance: (instanceId, additive = false) => {
     set((state) => {
-      if (!additive) return { selectedInstanceIds: [instanceId] };
+      if (!additive) {
+        return {
+          selectedInstanceIds: [instanceId],
+          peekingInstanceId: state.peekingInstanceId && state.peekingInstanceId !== instanceId ? null : state.peekingInstanceId,
+        };
+      }
       const exists = state.selectedInstanceIds.includes(instanceId);
       return {
         selectedInstanceIds: exists
           ? state.selectedInstanceIds.filter((id) => id !== instanceId)
           : [...state.selectedInstanceIds, instanceId],
+        peekingInstanceId: state.peekingInstanceId && state.peekingInstanceId !== instanceId ? null : state.peekingInstanceId,
       };
     });
   },
 
-  clearSelection: () => set({ selectedInstanceIds: [] }),
+  clearSelection: () => set({ selectedInstanceIds: [], peekingInstanceId: null }),
 
   beginDrag: (instanceId) => {
     set((state) => {
@@ -703,6 +798,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       const instance = state.cardInstances[instanceId];
       if (!instance) return { handFieldDrag: null };
       const clamped = clampToTable(x, z);
+      const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
       return {
         hand: state.hand.filter((id) => id !== instanceId),
         cardInstances: {
@@ -712,7 +808,8 @@ export const useTableStore = create<TableState>((set, get) => ({
             zone: 'table',
             position: { x: clamped.x, y: 0, z: clamped.z },
             faceUp,
-            rotationY: 0,
+            rotationY: getInitialCardRotationForPlayer(activePlayerId),
+            placedByPlayerId: faceUp ? null : activePlayerId,
           },
         },
         handFieldDrag: null,
@@ -748,11 +845,21 @@ export const useTableStore = create<TableState>((set, get) => ({
   setFaceUp: (instanceIds, faceUp) => {
     set((state) => {
       const nextInstances = { ...state.cardInstances };
+      const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
       for (const id of instanceIds) {
         const instance = nextInstances[id];
-        if (instance) nextInstances[id] = { ...instance, faceUp };
+        if (!instance) continue;
+        // Flipping a table card face-down here (right-click "裏向きにする") makes
+        // the CURRENT player the one who gets to privately peek at it later -
+        // face-up always clears that attribution since privacy no longer applies.
+        const placedByPlayerId =
+          instance.zone === 'table' ? (faceUp ? null : activePlayerId) : instance.placedByPlayerId;
+        nextInstances[id] = { ...instance, faceUp, placedByPlayerId };
       }
-      return { cardInstances: nextInstances };
+      return {
+        cardInstances: nextInstances,
+        peekingInstanceId: faceUp && instanceIds.includes(state.peekingInstanceId ?? '') ? null : state.peekingInstanceId,
+      };
     });
   },
 
@@ -798,7 +905,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         const detached = detach(stacks, hand, id);
         stacks = detached.stacks;
         hand = detached.hand;
-        nextInstances[id] = { ...instance, zone: 'hand', faceUp: true, rotationY: 0 };
+        nextInstances[id] = { ...instance, zone: 'hand', faceUp: true, rotationY: 0, placedByPlayerId: null };
         movedIds.push(id);
       }
       return {
@@ -808,6 +915,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         selectedInstanceIds: state.selectedInstanceIds.filter((id) => !instanceIds.includes(id)),
         cardContextMenu: null,
         multiSelectContextMenu: null,
+        peekingInstanceId: state.peekingInstanceId && instanceIds.includes(state.peekingInstanceId) ? null : state.peekingInstanceId,
       };
     });
   },
@@ -817,6 +925,8 @@ export const useTableStore = create<TableState>((set, get) => ({
       let stacks = state.stacks;
       let hand = state.hand;
       const nextInstances = { ...state.cardInstances };
+      const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
+      const rotationY = getInitialCardRotationForPlayer(activePlayerId);
       let dropIndex = 0;
       for (const id of instanceIds) {
         const instance = nextInstances[id];
@@ -830,7 +940,14 @@ export const useTableStore = create<TableState>((set, get) => ({
         const detached = detach(stacks, hand, id);
         stacks = detached.stacks;
         hand = detached.hand;
-        nextInstances[id] = { ...instance, zone: 'table', faceUp, rotationY: 0, position: { x: spread.x, y: 0, z: spread.z } };
+        nextInstances[id] = {
+          ...instance,
+          zone: 'table',
+          faceUp,
+          rotationY,
+          position: { x: spread.x, y: 0, z: spread.z },
+          placedByPlayerId: faceUp ? null : activePlayerId,
+        };
       }
       return {
         cardInstances: nextInstances,
@@ -839,6 +956,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         selectedInstanceIds: state.selectedInstanceIds.filter((id) => !instanceIds.includes(id)),
         cardContextMenu: null,
         multiSelectContextMenu: null,
+        peekingInstanceId: state.peekingInstanceId && instanceIds.includes(state.peekingInstanceId) ? null : state.peekingInstanceId,
       };
     });
   },
@@ -855,7 +973,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         const detached = detach(stacks, hand, id);
         stacks = detached.stacks;
         hand = detached.hand;
-        nextInstances[id] = { ...instance, zone: 'deck', faceUp: false, rotationY: 0 };
+        nextInstances[id] = { ...instance, zone: 'deck', faceUp: false, rotationY: 0, placedByPlayerId: null };
         movedIds.push(id);
       }
       stacks = stacks.map((s) => (s.type === 'mainDeck' ? { ...s, cardInstanceIds: [...s.cardInstanceIds, ...movedIds] } : s));
@@ -882,7 +1000,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         const detached = detach(stacks, hand, id);
         stacks = detached.stacks;
         hand = detached.hand;
-        nextInstances[id] = { ...instance, zone: 'deck', faceUp: false, rotationY: 0 };
+        nextInstances[id] = { ...instance, zone: 'deck', faceUp: false, rotationY: 0, placedByPlayerId: null };
         movedIds.push(id);
       }
       stacks = stacks.map((s) => (s.type === 'mainDeck' ? { ...s, cardInstanceIds: [...movedIds, ...s.cardInstanceIds] } : s));
@@ -972,11 +1090,19 @@ export const useTableStore = create<TableState>((set, get) => ({
       const instance = state.cardInstances[topId];
       if (!instance) return state;
       const revealed = clampToTable(stack.position.x + REVEAL_TOP_OFFSET.x, stack.position.z + REVEAL_TOP_OFFSET.z);
+      const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
       return {
         stacks: state.stacks.map((s) => (s.stackId === stackId ? { ...s, cardInstanceIds: s.cardInstanceIds.slice(0, -1) } : s)),
         cardInstances: {
           ...state.cardInstances,
-          [topId]: { ...instance, zone: 'table', faceUp: true, rotationY: 0, position: { x: revealed.x, y: 0, z: revealed.z } },
+          [topId]: {
+            ...instance,
+            zone: 'table',
+            faceUp: true,
+            rotationY: getInitialCardRotationForPlayer(activePlayerId),
+            placedByPlayerId: null,
+            position: { x: revealed.x, y: 0, z: revealed.z },
+          },
         },
       };
     });
@@ -1071,6 +1197,97 @@ export const useTableStore = create<TableState>((set, get) => ({
       saveToStorage(STORAGE_KEYS.cameraView, next);
       return { cameraView: next };
     });
+  },
+
+  canPeekCard: (instanceId) => {
+    const state = get();
+    const instance = state.cardInstances[instanceId];
+    if (!instance || instance.zone !== 'table' || instance.faceUp) return false;
+    // Single-player has no second player to keep a secret from - always allowed.
+    if (state.players.length < 2) return true;
+    const activePlayerId = state.players[state.currentPlayerIndex]?.playerId;
+    return Boolean(instance.placedByPlayerId) && instance.placedByPlayerId === activePlayerId;
+  },
+
+  beginPeekCard: (instanceId) => {
+    set((state) => {
+      const instance = state.cardInstances[instanceId];
+      if (!instance || instance.zone !== 'table' || instance.faceUp) return state;
+      if (state.players.length >= 2) {
+        const activePlayerId = state.players[state.currentPlayerIndex]?.playerId;
+        if (!instance.placedByPlayerId || instance.placedByPlayerId !== activePlayerId) return state;
+      }
+      return { peekingInstanceId: instanceId };
+    });
+  },
+
+  endPeekCard: () => set({ peekingInstanceId: null }),
+
+  setLeftPanelCollapsed: (collapsed) => {
+    saveToStorage(STORAGE_KEYS.leftPanelCollapsed, collapsed);
+    set({ leftPanelCollapsed: collapsed });
+  },
+
+  setPreviewPanelCollapsed: (collapsed) => {
+    saveToStorage(STORAGE_KEYS.previewPanelCollapsed, collapsed);
+    set({ previewPanelCollapsed: collapsed });
+  },
+
+  setTopBarCollapsed: (collapsed) => {
+    saveToStorage(STORAGE_KEYS.topBarCollapsed, collapsed);
+    set({ topBarCollapsed: collapsed });
+  },
+
+  enterFocusMode: () => {
+    set((state) => {
+      if (state.focusMode) return state;
+      return {
+        focusMode: true,
+        focusModeSnapshot: {
+          left: state.leftPanelCollapsed,
+          preview: state.previewPanelCollapsed,
+          topBar: state.topBarCollapsed,
+          hand: state.handPanelCollapsed,
+        },
+        // Force everything collapsed for the duration - deliberately NOT
+        // going through the persisted setters, so the user's own saved
+        // preferences are untouched by this temporary override.
+        leftPanelCollapsed: true,
+        previewPanelCollapsed: true,
+        topBarCollapsed: true,
+        handPanelCollapsed: true,
+      };
+    });
+  },
+
+  exitFocusMode: () => {
+    set((state) => {
+      if (!state.focusModeSnapshot) return { focusMode: false, focusModeSnapshot: null };
+      const snapshot = state.focusModeSnapshot;
+      return {
+        focusMode: false,
+        focusModeSnapshot: null,
+        leftPanelCollapsed: snapshot.left,
+        previewPanelCollapsed: snapshot.preview,
+        topBarCollapsed: snapshot.topBar,
+        handPanelCollapsed: snapshot.hand,
+      };
+    });
+  },
+
+  setLoupeEnabled: (enabled) => {
+    saveToStorage(STORAGE_KEYS.loupeEnabled, enabled);
+    set({ loupeEnabled: enabled });
+  },
+
+  setGraphicsQuality: (quality) => {
+    saveToStorage(STORAGE_KEYS.graphicsQuality, quality);
+    set({ graphicsQuality: quality });
+  },
+
+  setSelectedPlaymatId: (playmatId) => {
+    saveToStorage(STORAGE_KEYS.selectedPlaymatId, playmatId);
+    set({ selectedPlaymatId: playmatId });
   },
 
   getInstanceById: (instanceId) => get().cardInstances[instanceId],

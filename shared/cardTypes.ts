@@ -31,6 +31,16 @@ export type CardInstance = {
   };
   rotationY: CardRotation;
   faceUp: boolean;
+  /**
+   * Which player last placed/flipped this card face-down on the table -
+   * used only by the offline pass-and-play "peek at my own face-down card"
+   * feature (see useTableStore's canPeekCard/beginPeekCard). Optional and
+   * absent/undefined on all older data and in online mode, which never
+   * reads or writes this field. Cleared back to null whenever the card
+   * becomes face-up again, since privacy no longer applies once everyone
+   * can already see it.
+   */
+  placedByPlayerId?: string | null;
 };
 
 /** What kind of pile a CardStack represents. */

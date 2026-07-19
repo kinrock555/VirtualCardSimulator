@@ -4,6 +4,7 @@ import type { ThreeEvent } from '@react-three/fiber';
 import type { TableTheme } from '../../config/tableThemes';
 import { getTableSurfaceTexture } from '../../lib/tableTextureGenerator';
 import { darkenHex } from '../../lib/color';
+import { useCustomPlaymatTexture } from '../../lib/useCustomPlaymatTexture';
 import {
   TABLE_DEPTH,
   TABLE_SURFACE_Y,
@@ -24,12 +25,17 @@ const INNER_BORDER_MARGIN = 0.16;
 
 type TableSurfaceProps = {
   theme: TableTheme;
+  /** False for the (non-interactive) main-menu background reuse of this component - disables the playmat's click handler and excludes it from raycasting entirely. Defaults to true for the real play screen. */
+  interactive?: boolean;
 };
 
-export function TableSurface({ theme }: TableSurfaceProps) {
+export function TableSurface({ theme, interactive = true }: TableSurfaceProps) {
   const placeStackAt = useTableStore((state) => state.placeStackAt);
   const clearSelection = useTableStore((state) => state.clearSelection);
-  const texture = useMemo(() => getTableSurfaceTexture(theme), [theme]);
+  const selectedPlaymatId = useTableStore((state) => state.selectedPlaymatId);
+  const themeTexture = useMemo(() => getTableSurfaceTexture(theme), [theme]);
+  const customPlaymatTexture = useCustomPlaymatTexture(selectedPlaymatId, TABLE_WIDTH / TABLE_DEPTH);
+  const texture = customPlaymatTexture ?? themeTexture;
   const frameColor = useMemo(() => darkenHex(theme.tableColor, 0.45), [theme.tableColor]);
   const legColor = useMemo(() => darkenHex(theme.tableColor, 0.62), [theme.tableColor]);
 
@@ -64,8 +70,8 @@ export function TableSurface({ theme }: TableSurfaceProps) {
       {/* Outer frame: gives the table real thickness plus a raised lip around the mat. */}
       <RoundedBox
         args={[frameWidth, TABLE_FRAME_THICKNESS, frameDepth]}
-        radius={0.14}
-        smoothness={2}
+        radius={0.18}
+        smoothness={3}
         position={[0, frameCenterY, 0]}
         castShadow
         receiveShadow
@@ -84,10 +90,13 @@ export function TableSurface({ theme }: TableSurfaceProps) {
         position={[0, TABLE_SURFACE_Y - 0.004, 0]}
         rotation={[-Math.PI / 2, 0, 0]}
         receiveShadow
-        onClick={handleSurfaceClick}
+        onClick={interactive ? handleSurfaceClick : undefined}
+        raycast={interactive ? undefined : () => null}
       >
         <planeGeometry args={[TABLE_WIDTH, TABLE_DEPTH]} />
-        <meshStandardMaterial map={texture} color={theme.tableColor} roughness={0.82} metalness={0} />
+        {/* A custom playmat photo must render at its own true colors - only the
+            procedurally-generated theme texture gets tinted by theme.tableColor. */}
+        <meshStandardMaterial map={texture} color={customPlaymatTexture ? '#ffffff' : theme.tableColor} roughness={0.82} metalness={0} />
       </mesh>
 
       {/* Legs - simple boxes are enough; no need for a detailed 3D model. */}

@@ -41,14 +41,29 @@ export function PlayPage() {
   const toggleCameraView = useTableStore((state) => state.toggleCameraView);
   const pendingSessionConfig = useTableStore((state) => state.pendingSessionConfig);
   const startTestSession = useTableStore((state) => state.startTestSession);
+  const pendingBoardToLoad = useTableStore((state) => state.pendingBoardToLoad);
+  const setPendingBoardToLoad = useTableStore((state) => state.setPendingBoardToLoad);
+  const applySnapshot = useTableStore((state) => state.applySnapshot);
   const players = useTableStore((state) => state.players);
   const currentPlayerIndex = useTableStore((state) => state.currentPlayerIndex);
   const switchToPlayer = useTableStore((state) => state.switchToPlayer);
   const awaitingHandReveal = useTableStore((state) => state.awaitingHandReveal);
   const revealHand = useTableStore((state) => state.revealHand);
+  const topBarCollapsed = useTableStore((state) => state.topBarCollapsed);
+  const setTopBarCollapsed = useTableStore((state) => state.setTopBarCollapsed);
+  const focusMode = useTableStore((state) => state.focusMode);
+  const enterFocusMode = useTableStore((state) => state.enterFocusMode);
+  const exitFocusMode = useTableStore((state) => state.exitFocusMode);
+  const graphicsQuality = useTableStore((state) => state.graphicsQuality);
 
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [cameraResetToken, setCameraResetToken] = useState(0);
+  // Sticks at true for the rest of this mount once a bootstrap runs, unlike
+  // pendingSessionConfig/pendingBoardToLoad which are cleared the instant
+  // they're consumed - needed so the "deck not found" guard below doesn't
+  // re-trigger afterward just because the deck a restored board referenced
+  // no longer exists.
+  const [bootstrapped, setBootstrapped] = useState(false);
   const deck = deckId ? getDeckById(deckId) : undefined;
   const theme = getTableThemeById(selectedThemeId);
   const roomEnvironment = getRoomEnvironmentById(selectedRoomEnvironmentId);
@@ -57,11 +72,17 @@ export function PlayPage() {
   const opponentPlayer = isMultiplayer ? players[(currentPlayerIndex + 1) % players.length] : undefined;
 
   useEffect(() => {
-    // A 2-player session queued by PlaySetupPage takes priority over the
-    // plain single-deck load - both branches fully replace the table state,
-    // so only one of them should ever run per mount.
-    if (pendingSessionConfig) {
+    // "前回の続きから" (a saved board, possibly referencing a deleted/missing
+    // deck) takes priority over a queued 2-player session, which in turn
+    // takes priority over the plain single-deck load - all three branches
+    // fully replace the table state, so only one should ever run per mount.
+    if (pendingBoardToLoad) {
+      applySnapshot(pendingBoardToLoad);
+      setPendingBoardToLoad(null);
+      setBootstrapped(true);
+    } else if (pendingSessionConfig) {
       startTestSession(pendingSessionConfig);
+      setBootstrapped(true);
     } else if (deck) {
       loadDeck(deck);
     }
@@ -73,7 +94,11 @@ export function PlayPage() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        clearSelection();
+        if (focusMode) {
+          exitFocusMode();
+        } else {
+          clearSelection();
+        }
         return;
       }
       const target = event.target as HTMLElement | null;
@@ -109,9 +134,17 @@ export function PlayPage() {
     awaitingHandReveal,
     switchToPlayer,
     currentPlayerIndex,
+    focusMode,
+    exitFocusMode,
   ]);
 
-  if (!deckId || !deck) {
+  // A queued 2-player session or a "continue last session" board may not
+  // resolve to a real deck via the URL's :deckId (a synthetic id, or a
+  // since-deleted deck) - both still have real data to restore, so they
+  // bypass the plain "deck not found" guard below. `bootstrapped` (unlike
+  // the pending flags, which clear the instant they're consumed) stays true
+  // for the rest of this mount once either bootstrap path has run.
+  if (!deckId || (!deck && !bootstrapped && !pendingSessionConfig && !pendingBoardToLoad)) {
     return (
       <div className="screen">
         <p className="empty-state">
@@ -146,7 +179,7 @@ export function PlayPage() {
           fallback={<div className="canvas-error-fallback">3D表示でエラーが発生しました。</div>}
         >
           <Canvas
-            shadows
+            shadows={graphicsQuality !== 'light'}
             camera={{ position: PLAY_CAMERA_INITIAL_POSITION, fov: 45 }}
             onCreated={({ gl }) => {
               // Brighter, more natural-looking card colors (see README「フィールドの明るさ改善」).
@@ -163,45 +196,66 @@ export function PlayPage() {
                 roomEnvironment={roomEnvironment}
                 cameraView={cameraView}
                 cameraResetToken={cameraResetToken}
+                graphicsQuality={graphicsQuality}
               />
             </Suspense>
           </Canvas>
         </ErrorBoundary>
 
-        <div className="play-topbar">
-          {isMultiplayer && activePlayer && (
-            <div className="play-topbar-player-info">
-              現在のプレイヤー：{activePlayer.name}
-              <Button size="sm" onClick={() => switchToPlayer((currentPlayerIndex + 1) % players.length)}>
-                プレイヤー交代
-              </Button>
-            </div>
-          )}
-          <div className="play-topbar-actions">
-            <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
-              メインメニューへ戻る
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => navigate('/decks')}>
-              デッキ編集へ戻る
-            </Button>
-            <Button size="sm" onClick={() => setCameraResetToken((token) => token + 1)}>
-              カメラ初期位置へ戻す
-            </Button>
-            <Button size="sm" onClick={toggleCameraView}>
-              視点：{cameraView === 'top' ? '真上' : '斜め'}
-            </Button>
-            <TableThemePanel />
-            <BoardManagerPanel controlsRef={controlsRef} />
-            <Button size="sm" variant="danger" onClick={handleResetTable}>
-              テーブルリセット
+        {focusMode ? (
+          <div className="play-topbar play-topbar-focus-only">
+            <Button size="sm" variant="primary" onClick={exitFocusMode}>
+              集中モード解除
             </Button>
           </div>
-        </div>
+        ) : topBarCollapsed ? (
+          <button type="button" className="play-topbar-collapsed-tab" onClick={() => setTopBarCollapsed(false)}>
+            ▼ 操作バーを表示
+          </button>
+        ) : (
+          <div className="play-topbar">
+            {isMultiplayer && activePlayer && (
+              <div className="play-topbar-player-info">
+                現在のプレイヤー：{activePlayer.name}
+                <Button size="sm" onClick={() => switchToPlayer((currentPlayerIndex + 1) % players.length)}>
+                  プレイヤー交代
+                </Button>
+              </div>
+            )}
+            <div className="play-topbar-actions">
+              <Button size="sm" variant="ghost" onClick={() => navigate('/')}>
+                メインメニューへ戻る
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => navigate('/decks')}>
+                デッキ編集へ戻る
+              </Button>
+              <Button size="sm" onClick={() => setCameraResetToken((token) => token + 1)}>
+                カメラ初期位置へ戻す
+              </Button>
+              <Button size="sm" onClick={toggleCameraView}>
+                視点：{cameraView === 'top' ? '真上' : '斜め'}
+              </Button>
+              <TableThemePanel />
+              <BoardManagerPanel controlsRef={controlsRef} />
+              <Button size="sm" variant="danger" onClick={handleResetTable}>
+                テーブルリセット
+              </Button>
+              <Button size="sm" onClick={enterFocusMode}>
+                集中モード
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setTopBarCollapsed(true)}>
+                ▲ たたむ
+              </Button>
+            </div>
+          </div>
+        )}
 
-        {isMultiplayer && opponentPlayer && <OpponentHandRack name={opponentPlayer.name} count={opponentPlayer.hand.length} />}
+        {isMultiplayer && opponentPlayer && !focusMode && (
+          <OpponentHandRack name={opponentPlayer.name} count={opponentPlayer.hand.length} />
+        )}
 
-        <OperationGuidePanel />
-        <CardPreviewOverlay />
+        {!focusMode && <OperationGuidePanel />}
+        {!focusMode && <CardPreviewOverlay />}
         <CardContextMenu />
         <StackContextMenu />
         <MultiSelectContextMenu />

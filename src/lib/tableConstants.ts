@@ -47,7 +47,15 @@ export const HAND_AVAILABLE_WIDTH = _TABLE_WIDTH * 0.65;
 // the frame/legs are purely additive geometry above and below that plane.
 export const TABLE_FRAME_MARGIN = 0.6;
 export const TABLE_FRAME_THICKNESS = 0.4;
-export const TABLE_FRAME_TOP_Y = _TABLE_SURFACE_Y + 0.02;
+// Kept BELOW the playmat (TABLE_SURFACE_Y - 0.004), not above it: the frame is
+// a solid RoundedBox whose flat top spans its whole (wider-than-the-playmat)
+// footprint, so a frame top above the playmat would occlude the playmat
+// entirely rather than just forming a lip around its edges. This was
+// invisible with the default theme (the frame's solid tint and the felt
+// texture's tint are both derived from the same theme.tableColor and look
+// nearly identical) but completely hid custom playmat photos - see
+// TableSurface.tsx's comment above the playmat/boundary-line meshes.
+export const TABLE_FRAME_TOP_Y = _TABLE_SURFACE_Y - 0.05;
 export const TABLE_LEG_HEIGHT = 1.6;
 export const TABLE_LEG_SIZE = 0.32;
 export const TABLE_LEG_INSET = 0.5;
@@ -98,9 +106,29 @@ export const CAMERA_VIEW_TRANSITION_SECONDS = 0.35;
 // ---- Per-player deck positions for 2-player test play ----
 // Only used in mirroredDecks/separateDecks modes, where each player has their
 // own deck stack; single/sharedDeck modes keep using the one DRAW_PILE_ORIGIN
-// pile above. Same X as DRAW_PILE_ORIGIN, split front/back so the two piles
-// never overlap.
+// pile above (shared decks stay in the existing center position by design).
+//
+// Each seat's deck goes to THAT PLAYER's own right-hand side, not a fixed
+// world-space side - derived from where the seat is and which way it faces,
+// rather than two independently hand-picked {x,z} pairs. Player 1 sits at
+// the near (+Z) edge facing -Z; player 2 sits at the far (-Z) edge facing
+// +Z (they face each other across the table). Facing -Z, "right" is world
+// +X; facing the opposite way (+Z), "right" flips to world -X - the same
+// way two people facing each other across a real table point to opposite
+// absolute directions when each points to "their own right".
+type SeatSide = 'near' | 'far';
+const SEAT_EDGE_Z: Record<SeatSide, number> = {
+  near: _TABLE_DEPTH / 2 - 1.6,
+  far: -(_TABLE_DEPTH / 2 - 1.6),
+};
+const SEAT_RIGHT_X_SIGN: Record<SeatSide, 1 | -1> = { near: 1, far: -1 };
+const PLAYER_DECK_X_OFFSET = _TABLE_WIDTH / 4;
+
+function computeSeatDeckOrigin(seat: SeatSide): { x: number; z: number } {
+  return { x: SEAT_RIGHT_X_SIGN[seat] * PLAYER_DECK_X_OFFSET, z: SEAT_EDGE_Z[seat] };
+}
+
 export const PLAYER_DECK_ORIGINS: [{ x: number; z: number }, { x: number; z: number }] = [
-  { x: -_TABLE_WIDTH / 4, z: _TABLE_DEPTH / 2 - 1.6 },
-  { x: -_TABLE_WIDTH / 4, z: -(_TABLE_DEPTH / 2 - 1.6) },
+  computeSeatDeckOrigin('near'), // player 1
+  computeSeatDeckOrigin('far'), // player 2
 ];
