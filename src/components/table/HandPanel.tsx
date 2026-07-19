@@ -1,4 +1,4 @@
-import { useState, type PointerEvent as ReactPointerEvent } from 'react';
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useCardMasterStore } from '../../store/useCardMasterStore';
 import { useTableStore } from '../../store/useTableStore';
 import { screenToTablePoint } from '../../lib/threeBridge';
@@ -25,6 +25,7 @@ export function HandPanel() {
   const getCardById = useCardMasterStore((state) => state.getCardById);
 
   const [ghost, setGhost] = useState<DragGhost | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   const overlap = hand.length > OVERLAP_THRESHOLD;
 
@@ -43,7 +44,20 @@ export function HandPanel() {
   const handlePointerMove = (instanceId: string) => (event: ReactPointerEvent<HTMLDivElement>) => {
     if (useTableStore.getState().handFieldDrag?.instanceId !== instanceId) return;
     setGhost((prev) => (prev ? { ...prev, clientX: event.clientX, clientY: event.clientY } : prev));
-    const point = screenToTablePoint(event.clientX, event.clientY);
+    // The hand panel now floats directly over the 3D canvas (see .hand-panel
+    // in global.css), so the canvas extends underneath it - without this
+    // check, even a tiny in-place jitter while still hovering the hand tray
+    // would already land on a valid table point and could drop the card on
+    // pointer-up. Only treat the pointer as "over the field" once it has
+    // actually left the hand panel's own on-screen area.
+    const panelRect = panelRef.current?.getBoundingClientRect();
+    const overHandPanel =
+      panelRect &&
+      event.clientX >= panelRect.left &&
+      event.clientX <= panelRect.right &&
+      event.clientY >= panelRect.top &&
+      event.clientY <= panelRect.bottom;
+    const point = overHandPanel ? null : screenToTablePoint(event.clientX, event.clientY);
     if (point) updateHandFieldDrag(point.x, point.z, true);
     else updateHandFieldDrag(0, 0, false);
   };
@@ -65,7 +79,7 @@ export function HandPanel() {
   const ghostImageSrc = ghost && !ghost.faceUp ? getCardBackUrl() : ghostMaster?.imagePath;
 
   return (
-    <div className={`hand-panel${collapsed ? ' collapsed' : ''}`}>
+    <div ref={panelRef} className={`hand-panel${collapsed ? ' collapsed' : ''}`}>
       <div className="hand-panel-header">
         <span className="hand-panel-title">手札</span>
         <span className="hand-panel-count">{hand.length}枚</span>
@@ -78,9 +92,14 @@ export function HandPanel() {
         </button>
       </div>
 
-      {!collapsed && (
+      {!collapsed && hand.length === 0 && (
         <div className="hand-panel-track" onClick={() => clearSelection()}>
-          {hand.length === 0 && <p className="hand-panel-empty">手札はありません</p>}
+          <p className="hand-panel-empty">手札はありません</p>
+        </div>
+      )}
+
+      {!collapsed && hand.length > 0 && (
+        <div className="hand-panel-track" onClick={() => clearSelection()}>
           <div className="hand-panel-cards">
             {hand.map((instanceId, index) => {
               const instance = cardInstances[instanceId];

@@ -763,10 +763,11 @@ button {
 
 .card-preview-overlay {
   /* Anchored to top+bottom (instead of a top+max-height computed from 100vh)
-     so its available height always matches .play-field's actual box - which
-     already excludes the hand panel via flexbox - regardless of whether the
-     hand panel is expanded, collapsed, or resized. No hand-panel-height
-     value needs to be tracked or duplicated anywhere for this to work. */
+     so its available height always matches .play-field's actual box,
+     regardless of window size. The hand panel now floats over the canvas
+     instead of reserving its own row (see .hand-panel below), so it no
+     longer affects this box's height - horizontal clearance from the hand
+     cards is handled by .hand-panel's own left/right insets instead. */
   position: absolute;
   top: var(--header-height);
   right: 20px;
@@ -974,12 +975,26 @@ button {
    (see each .hand-card's own shadow/border below for per-card definition
    instead of one big background rectangle). */
 .hand-panel {
-  position: relative;
-  flex: 0 0 auto;
+  /* Floats directly over the 3D canvas near the bottom of the play field,
+     instead of occupying its own flex row below it (previously this only had
+     its background/border/shadow removed, which left the row's own reserved
+     height showing through to .play-screen's dark background - a large
+     "empty black bar" even with a transparent .hand-panel). Left/right insets
+     keep it clear of the operation-guide panel (240px + margin) and the card
+     preview overlay (up to 620px + margin, same clamp() as its width) so
+     the two floating panels can never overlap regardless of viewport width.
+     pointer-events:none on this outer box lets clicks in any empty margin
+     fall through to the canvas beneath; header/track re-enable it. */
+  position: absolute;
+  left: calc(240px + var(--panel-edge-margin) + 10px);
+  right: calc(clamp(300px, 34vw, 620px) + var(--panel-edge-margin) + 20px);
+  bottom: 12px;
   z-index: 25;
-  background: transparent;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  background: transparent;
+  pointer-events: none;
 }
 
 .hand-panel-header {
@@ -987,6 +1002,7 @@ button {
   align-items: center;
   gap: 10px;
   padding: 6px 16px;
+  pointer-events: auto;
 }
 
 .hand-panel-title,
@@ -1036,6 +1052,7 @@ button {
   overflow-x: auto;
   overflow-y: hidden;
   padding: 14px 24px 16px;
+  pointer-events: auto;
 }
 
 .hand-panel-empty {
@@ -1043,14 +1060,13 @@ button {
   text-align: center;
   color: var(--color-text-muted);
   font-size: 13px;
-  padding: 20px 0;
+  padding: 4px 0;
 }
 
 .hand-panel-cards {
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  min-height: 130px;
   width: max-content;
   margin: 0 auto;
 }

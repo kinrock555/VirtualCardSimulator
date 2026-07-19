@@ -264,9 +264,12 @@ export function PlayPage() {
         <StackContextMenu />
         <MultiSelectContextMenu />
         {stackViewerStackId && <StackViewerPanel />}
-      </div>
 
-      <HandPanel />
+        {/* Floats over the 3D canvas instead of sitting in its own row below it
+            (see .hand-panel in global.css) - the canvas now uses the full
+            .play-field height rather than being shortened to make room for it. */}
+        <HandPanel />
+      </div>
 
       {isMultiplayer && awaitingHandReveal && activePlayer && (
         <PlayerSwitchOverlay incomingPlayerName={activePlayer.name} onReveal={revealHand} />
