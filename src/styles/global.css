@@ -170,8 +170,18 @@ button {
 }
 
 /* ---------- Main menu ---------- */
-
+/* Original palette (--color-accent blue etc.) stays untouched for the rest
+   of the app - this title screen alone leans into a deep navy/black/red
+   "card battle" palette with gold/silver/pale-blue accents, scoped with its
+   own variables so nothing here leaks into other screens. */
 .main-menu {
+  --mm-gold: #d9b25c;
+  --mm-gold-bright: #f4d98a;
+  --mm-silver: #b9c3d6;
+  --mm-red: #7a1420;
+  --mm-red-bright: #b3212f;
+  --mm-blue-glow: #6fa8ff;
+
   position: relative;
   /* Explicit viewport height (matching .play-screen's pattern), not
      min-height:100% - the absolutely-positioned 3D background below
@@ -201,17 +211,77 @@ button {
 .main-menu-background-scrim {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, rgba(5, 6, 10, 0.35) 0%, rgba(5, 6, 10, 0.82) 78%, rgba(5, 6, 10, 0.95) 100%);
+  /* Deepened + tinted toward navy/red at the edges (vs. a flat black
+     vignette before) so the 3D table reads as a moody battle arena rather
+     than a plain darkened backdrop. */
+  background: radial-gradient(ellipse at center, rgba(8, 8, 14, 0.32) 0%, rgba(6, 6, 12, 0.8) 70%, rgba(4, 3, 8, 0.96) 100%),
+    linear-gradient(180deg, rgba(20, 6, 10, 0.22) 0%, transparent 30%, transparent 70%, rgba(6, 8, 18, 0.35) 100%);
+}
+
+/* Small floating embers drifting up from the bottom of the screen - 8 fixed
+   elements, pure opacity/transform animation (no layout thrash, GPU
+   compositable), never covers or intercepts clicks. */
+.main-menu-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.main-menu-ember {
+  position: absolute;
+  bottom: -10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 217, 138, 0.95), rgba(244, 217, 138, 0) 70%);
+  opacity: 0;
+  animation: main-menu-ember-float 11s ease-in infinite;
+}
+
+.main-menu-ember:nth-child(1) { left: 8%; animation-duration: 10s; animation-delay: 0s; }
+.main-menu-ember:nth-child(2) { left: 20%; animation-duration: 13s; animation-delay: 1.4s; }
+.main-menu-ember:nth-child(3) { left: 34%; animation-duration: 9s; animation-delay: 3s; }
+.main-menu-ember:nth-child(4) { left: 48%; animation-duration: 14s; animation-delay: 0.6s; }
+.main-menu-ember:nth-child(5) { left: 61%; animation-duration: 11s; animation-delay: 2.2s; }
+.main-menu-ember:nth-child(6) { left: 74%; animation-duration: 12s; animation-delay: 4s; }
+.main-menu-ember:nth-child(7) { left: 86%; animation-duration: 10s; animation-delay: 1s; }
+.main-menu-ember:nth-child(8) { left: 94%; animation-duration: 15s; animation-delay: 3.6s; }
+
+@keyframes main-menu-ember-float {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  12% { opacity: 0.8; }
+  88% { opacity: 0.4; }
+  100% { transform: translateY(-92vh) scale(0.4); opacity: 0; }
+}
+
+/* Thin inset frame with a small gold glow at each corner - a restrained
+   nod to a card/HUD border without needing any image asset. */
+.main-menu-frame {
+  position: absolute;
+  inset: 18px;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(217, 178, 92, 0.14);
+  background-repeat: no-repeat;
+  background-size: 14px 14px;
+  background-image: radial-gradient(circle, rgba(244, 217, 138, 0.75), rgba(244, 217, 138, 0) 70%),
+    radial-gradient(circle, rgba(244, 217, 138, 0.75), rgba(244, 217, 138, 0) 70%),
+    radial-gradient(circle, rgba(244, 217, 138, 0.75), rgba(244, 217, 138, 0) 70%),
+    radial-gradient(circle, rgba(244, 217, 138, 0.75), rgba(244, 217, 138, 0) 70%);
+  background-position: -7px -7px, calc(100% + 7px) -7px, -7px calc(100% + 7px), calc(100% + 7px) calc(100% + 7px);
 }
 
 .main-menu-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 30px;
   padding: 40px;
+  max-width: 100%;
   animation: main-menu-fade-in 0.7s ease both;
 }
 
@@ -228,39 +298,97 @@ button {
 
 .main-menu-heading {
   text-align: center;
+  max-width: 100%;
 }
 
+.main-menu-crest {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.main-menu-crest-line {
+  width: 56px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--mm-gold), transparent);
+}
+
+.main-menu-crest-gem {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, var(--mm-gold-bright), var(--mm-gold));
+  box-shadow: 0 0 10px rgba(244, 217, 138, 0.6);
+}
+
+/* The card-frame look: a beveled, angle-cut border box (clip-path, no
+   image) wrapping the metallic gradient title text inside it. */
 .main-menu-title {
-  font-size: 38px;
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 0 14px;
+  padding: 16px clamp(20px, 5vw, 40px);
+  border: 1px solid rgba(217, 178, 92, 0.4);
+  background: linear-gradient(180deg, rgba(24, 12, 10, 0.4), rgba(10, 6, 6, 0.6));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 40px rgba(179, 33, 47, 0.18),
+    0 0 70px rgba(111, 168, 255, 0.08);
+  clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px), 0 14px);
+}
+
+.main-menu-title-main {
+  display: block;
   font-weight: 800;
-  margin: 0 0 8px;
-  letter-spacing: 0.06em;
-  color: #f2f4fb;
-  text-shadow: 0 0 24px rgba(91, 140, 255, 0.35), 0 2px 12px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.03em;
+  font-size: clamp(24px, 5vw, 44px);
+  line-height: 1.15;
+  background: linear-gradient(180deg, #fdf6e3 0%, #f4d98a 32%, #d9b25c 55%, #fdf6e3 75%, #b9c3d6 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.7);
 }
 
 .main-menu-subtitle {
-  color: var(--color-text-muted);
-  font-size: 15px;
+  color: var(--mm-silver);
+  font-size: 14px;
+  letter-spacing: 0.08em;
   margin: 0;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
 }
 
 .main-menu-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 18px;
-  width: min(560px, 90vw);
-  padding: 28px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, rgba(28, 31, 41, 0.72), rgba(16, 18, 24, 0.72));
-  border: 1px solid rgba(126, 162, 255, 0.28);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.03) inset, 0 20px 60px rgba(0, 0, 0, 0.55), 0 0 40px rgba(91, 140, 255, 0.08);
+  gap: 16px;
+  width: min(560px, 92vw);
+  padding: 26px;
+  border-radius: 6px;
+  background: linear-gradient(165deg, rgba(20, 15, 22, 0.86), rgba(8, 9, 15, 0.92));
+  border: 1px solid rgba(185, 195, 214, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 22px 60px rgba(0, 0, 0, 0.6), 0 0 50px rgba(122, 20, 32, 0.12);
   backdrop-filter: blur(10px);
+}
+
+.main-menu-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16%;
+  right: 16%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--mm-gold), transparent);
+  opacity: 0.7;
 }
 
 .main-menu-primary-row {
   display: flex;
+  align-items: stretch;
   gap: 14px;
 }
 
@@ -270,36 +398,168 @@ button {
 
 .main-menu-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
+/* Metal-plate button shape: angle-cut top corners via clip-path instead of
+   a plain rounded rectangle, so even the secondary menu buttons read as
+   card-game UI rather than a generic admin panel. */
 .main-menu-button {
-  padding: 16px 18px;
-  font-size: 15.5px;
-  border-radius: 10px;
+  position: relative;
+  padding: 15px 16px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   text-align: center;
+  color: #dfe4ee;
+  background: linear-gradient(180deg, rgba(46, 51, 66, 0.92), rgba(18, 20, 28, 0.94));
+  border: 1px solid rgba(185, 195, 214, 0.22);
+  border-radius: 2px;
+  clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%, 0 10px);
+  overflow: hidden;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  animation: main-menu-button-in 0.5s ease both;
+}
+
+/* Diagonal light sweep - only actually animates on hover (::after sits
+   off-screen otherwise), so it costs nothing while idle. */
+.main-menu-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.16) 50%, transparent 60%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.main-menu-button:hover:not(:disabled)::after {
+  animation: main-menu-shine 0.9s ease;
+}
+
+@keyframes main-menu-shine {
+  to {
+    transform: translateX(120%);
+  }
 }
 
 .main-menu-button:hover:not(:disabled) {
+  /* Re-asserts the plate gradient (not just the accent bits below) - the
+     shared .btn/.btn-primary base styles also have a :hover background
+     rule, and CSS resolves that per-property, so without this the plain
+     .btn(-primary):hover background would win through and flatten the
+     metal-plate look into a solid color on hover. */
+  background: linear-gradient(180deg, rgba(58, 64, 82, 0.95), rgba(24, 27, 37, 0.96));
   transform: translateY(-2px);
+  border-color: var(--mm-gold);
+  box-shadow: 0 0 0 1px rgba(217, 178, 92, 0.4), 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 22px rgba(217, 178, 92, 0.25);
+}
+
+.main-menu-button:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.main-menu-button:focus-visible {
+  outline: 2px solid var(--mm-blue-glow);
+  outline-offset: 2px;
+}
+
+.main-menu-button:disabled {
+  opacity: 0.38;
+  filter: grayscale(0.5);
+}
+
+@keyframes main-menu-button-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .main-menu-button-hero {
-  padding: 24px 20px;
-  font-size: 19px;
-  font-weight: 700;
-  border-radius: 12px;
-  box-shadow: 0 0 24px rgba(91, 140, 255, 0.25);
+  padding: 22px 18px;
+  font-size: 18px;
+  font-weight: 800;
 }
 
-.main-menu-button-hero:hover:not(:disabled) {
-  box-shadow: 0 0 32px rgba(126, 162, 255, 0.4);
+/* テストプレイ - the single most prominent action on the screen: a gold-to-red
+   gradient plate with a slow (non-blinking) breathing glow. */
+.main-menu-button-hero:not(.main-menu-button-continue) {
+  color: #1a0e06;
+  background: linear-gradient(180deg, var(--mm-gold-bright) 0%, var(--mm-gold) 45%, var(--mm-red-bright) 100%);
+  border-color: rgba(244, 217, 138, 0.7);
+  box-shadow: 0 0 0 1px rgba(244, 217, 138, 0.5), 0 14px 30px rgba(0, 0, 0, 0.5), 0 0 26px rgba(217, 178, 92, 0.3);
+  animation: main-menu-button-in 0.5s ease both, main-menu-hero-glow 3.6s ease-in-out infinite 0.6s;
+}
+
+.main-menu-button-hero:not(.main-menu-button-continue):hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--mm-gold-bright) 0%, var(--mm-gold) 45%, var(--mm-red-bright) 100%);
+  transform: translateY(-3px);
+}
+
+@keyframes main-menu-hero-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 1px rgba(244, 217, 138, 0.5), 0 14px 30px rgba(0, 0, 0, 0.5), 0 0 26px rgba(217, 178, 92, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(244, 217, 138, 0.7), 0 14px 30px rgba(0, 0, 0, 0.5), 0 0 42px rgba(217, 178, 92, 0.5);
+  }
+}
+
+/* 前回の続きから - same size as the hero button so the primary row stays
+   balanced, but a calmer silver/navy finish so it doesn't compete with
+   テストプレイ for attention. */
+.main-menu-button-continue {
+  color: #eef1f7;
+  background: linear-gradient(180deg, rgba(72, 82, 104, 0.85), rgba(24, 27, 38, 0.92));
+  border-color: rgba(185, 195, 214, 0.3);
+}
+
+.main-menu-button-continue:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(84, 95, 120, 0.9), rgba(28, 32, 44, 0.94));
+  border-color: var(--mm-silver);
+  box-shadow: 0 0 0 1px rgba(185, 195, 214, 0.35), 0 10px 24px rgba(0, 0, 0, 0.45), 0 0 22px rgba(111, 168, 255, 0.22);
+}
+
+.audio-unlock-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 480px) {
+  .main-menu-content {
+    padding: 24px 14px;
+    gap: 22px;
+  }
+  .main-menu-frame {
+    inset: 8px;
+  }
+  .main-menu-title {
+    padding: 14px 18px;
+  }
+  .main-menu-panel {
+    padding: 20px 16px;
+    gap: 12px;
+  }
+  .main-menu-primary-row {
+    flex-direction: column;
+  }
+  .main-menu-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .main-menu-content {
+  .main-menu-content,
+  .main-menu-button,
+  .main-menu-button-hero:not(.main-menu-button-continue) {
     animation: none;
   }
   .main-menu-button,
@@ -308,6 +568,12 @@ button {
   }
   .main-menu-button:hover:not(:disabled) {
     transform: none;
+  }
+  .main-menu-button::after {
+    display: none;
+  }
+  .main-menu-embers {
+    display: none;
   }
 }
 
@@ -1930,6 +2196,30 @@ button {
 .settings-radio-option.selected {
   border-color: var(--color-accent);
   background: rgba(255, 211, 92, 0.08);
+}
+
+.settings-slider-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.settings-slider-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settings-slider-control input[type='range'] {
+  flex: 1;
+  accent-color: var(--color-accent);
+}
+
+.settings-slider-value {
+  min-width: 42px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--color-text-muted);
 }
 
 .playmat-manager {

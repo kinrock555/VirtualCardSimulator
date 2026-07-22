@@ -17,4 +17,5 @@ export const STORAGE_KEYS = {
   graphicsQuality: 'vct.graphicsQuality.v1',
   selectedPlaymatId: 'vct.selectedPlaymatId.v1',
   tableType: 'vct.tableType.v1',
+  audioSettings: 'vct.audioSettings.v1',
 } as const;

@@ -21,6 +21,7 @@ import {
 } from '../lib/tableConstants';
 import { loadFromStorage, saveToStorage } from '../lib/storage';
 import { STORAGE_KEYS } from '../lib/storageKeys';
+import { playSoundEffect } from '../lib/audio/audioManager';
 import { DEFAULT_TABLE_THEME_ID } from '../config/tableThemes';
 import { DEFAULT_ROOM_ENVIRONMENT_ID } from '../config/roomEnvironments';
 import { DEFAULT_TABLE_TYPE_ID } from '../config/tableTypes';
@@ -812,12 +813,14 @@ export const useTableStore = create<TableState>((set, get) => ({
   endHandFieldDrag: () => set({ handFieldDrag: null }),
 
   moveHandCardToTableAt: (instanceId, x, z, faceUp) => {
+    let placed = false;
     set((state) => {
       if (!state.hand.includes(instanceId)) return { handFieldDrag: null };
       const instance = state.cardInstances[instanceId];
       if (!instance) return { handFieldDrag: null };
       const clamped = clampToTable(x, z);
       const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
+      placed = true;
       return {
         hand: state.hand.filter((id) => id !== instanceId),
         cardInstances: {
@@ -834,6 +837,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         handFieldDrag: null,
       };
     });
+    if (placed) playSoundEffect('place');
   },
 
   updateDragPosition: (instanceId, x, z) => {
@@ -862,6 +866,7 @@ export const useTableStore = create<TableState>((set, get) => ({
   endDrag: () => set({ draggingInstanceId: null, groupDragOffsets: null }),
 
   setFaceUp: (instanceIds, faceUp) => {
+    if (instanceIds.length > 0) playSoundEffect('flip');
     set((state) => {
       const nextInstances = { ...state.cardInstances };
       const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
@@ -940,6 +945,7 @@ export const useTableStore = create<TableState>((set, get) => ({
   },
 
   moveCardsToTable: (instanceIds, faceUp) => {
+    let moved = false;
     set((state) => {
       let stacks = state.stacks;
       let hand = state.hand;
@@ -950,6 +956,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       for (const id of instanceIds) {
         const instance = nextInstances[id];
         if (!instance) continue;
+        moved = true;
         const sourceStack = stacks.find((s) => s.cardInstanceIds.includes(id));
         const base = sourceStack
           ? { x: sourceStack.position.x + REVEAL_TOP_OFFSET.x, z: sourceStack.position.z + REVEAL_TOP_OFFSET.z }
@@ -978,6 +985,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         peekingInstanceId: state.peekingInstanceId && instanceIds.includes(state.peekingInstanceId) ? null : state.peekingInstanceId,
       };
     });
+    if (moved) playSoundEffect('place');
   },
 
   moveCardsToMainDeckTop: (instanceIds) => {
@@ -1081,27 +1089,34 @@ export const useTableStore = create<TableState>((set, get) => ({
   },
 
   shuffleStack: (stackId) => {
+    const exists = get().stacks.some((s) => s.stackId === stackId);
+    if (!exists) return;
     set((state) => ({
       stacks: state.stacks.map((s) => (s.stackId === stackId ? { ...s, cardInstanceIds: shuffleArray(s.cardInstanceIds) } : s)),
     }));
+    playSoundEffect('shuffle');
   },
 
   moveStackTopToHand: (stackId) => {
+    let drew = false;
     set((state) => {
       const stack = state.stacks.find((s) => s.stackId === stackId);
       if (!stack || stack.cardInstanceIds.length === 0) return state;
       const topId = stack.cardInstanceIds[stack.cardInstanceIds.length - 1];
       const instance = state.cardInstances[topId];
       if (!instance) return state;
+      drew = true;
       return {
         stacks: state.stacks.map((s) => (s.stackId === stackId ? { ...s, cardInstanceIds: s.cardInstanceIds.slice(0, -1) } : s)),
         hand: [...state.hand, topId],
         cardInstances: { ...state.cardInstances, [topId]: { ...instance, zone: 'hand', faceUp: true } },
       };
     });
+    if (drew) playSoundEffect('draw');
   },
 
   moveStackTopToTable: (stackId) => {
+    let revealedCard = false;
     set((state) => {
       const stack = state.stacks.find((s) => s.stackId === stackId);
       if (!stack || stack.cardInstanceIds.length === 0) return state;
@@ -1110,6 +1125,7 @@ export const useTableStore = create<TableState>((set, get) => ({
       if (!instance) return state;
       const revealed = clampToTable(stack.position.x + REVEAL_TOP_OFFSET.x, stack.position.z + REVEAL_TOP_OFFSET.z);
       const activePlayerId = state.players[state.currentPlayerIndex]?.playerId ?? null;
+      revealedCard = true;
       return {
         stacks: state.stacks.map((s) => (s.stackId === stackId ? { ...s, cardInstanceIds: s.cardInstanceIds.slice(0, -1) } : s)),
         cardInstances: {
@@ -1125,6 +1141,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         },
       };
     });
+    if (revealedCard) playSoundEffect('place');
   },
 
   drawMultipleFromStack: (stackId, count) => {
@@ -1147,6 +1164,7 @@ export const useTableStore = create<TableState>((set, get) => ({
         cardInstances: nextInstances,
       };
     });
+    playSoundEffect('draw');
     return actualCount;
   },
 

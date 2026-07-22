@@ -19,6 +19,7 @@ import { OpponentHandRack } from '../components/table/OpponentHandRack';
 import { PlayerSwitchOverlay } from '../components/table/PlayerSwitchOverlay';
 import { useDeckStore } from '../store/useDeckStore';
 import { useTableStore } from '../store/useTableStore';
+import { useScreenBgm } from '../lib/audio/useScreenBgm';
 import { PLAY_CAMERA_INITIAL_POSITION } from '../lib/tableConstants';
 import { getTableThemeById } from '../config/tableThemes';
 import { getRoomEnvironmentById } from '../config/roomEnvironments';
@@ -57,6 +58,8 @@ export function PlayPage() {
   const exitFocusMode = useTableStore((state) => state.exitFocusMode);
   const graphicsQuality = useTableStore((state) => state.graphicsQuality);
   const selectedTableTypeId = useTableStore((state) => state.selectedTableTypeId);
+
+  useScreenBgm('play');
 
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
   const [cameraResetToken, setCameraResetToken] = useState(0);
