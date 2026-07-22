@@ -9,7 +9,7 @@ import { CardLayer } from './CardLayer';
 import { CameraRig } from './CameraRig';
 import { ThreeContextBridge } from './ThreeContextBridge';
 import { RoomEnvironmentRenderer } from './environments/RoomEnvironmentRenderer';
-import { PLAY_CAMERA_MAX_DISTANCE } from '../../lib/tableConstants';
+import { PLAY_CAMERA_MAX_DISTANCE, type PlayerSeat } from '../../lib/tableConstants';
 
 type TableSceneProps = {
   controlsRef: RefObject<OrbitControlsImpl | null>;
@@ -18,6 +18,8 @@ type TableSceneProps = {
   roomEnvironment: RoomEnvironment;
   cameraView: CameraView;
   cameraResetToken: number;
+  /** Offline 2-player only: which side of the table the camera should be viewing from. Defaults to player1 when omitted (single-player/main-menu/online all keep their existing view unchanged). */
+  cameraSeat?: PlayerSeat;
   /** Defaults to 'standard' for the main-menu background reuse (which doesn't pass this prop). */
   graphicsQuality?: GraphicsQuality;
   /** Defaults to 'standard' for callers that don't pass it. */
@@ -31,6 +33,7 @@ export function TableScene({
   roomEnvironment,
   cameraView,
   cameraResetToken,
+  cameraSeat,
   graphicsQuality = 'standard',
   tableType = 'standard',
 }: TableSceneProps) {
@@ -73,6 +76,7 @@ export function TableScene({
         enabled={cameraEnabled}
         maxDistance={PLAY_CAMERA_MAX_DISTANCE}
         view={cameraView}
+        seat={cameraSeat}
         resetToken={cameraResetToken}
       />
       <ThreeContextBridge />

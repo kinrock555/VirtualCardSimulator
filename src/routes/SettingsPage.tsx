@@ -18,6 +18,8 @@ export function SettingsPage() {
   const setMagnifierZoom = useTableStore((state) => state.setMagnifierZoom);
   const graphicsQuality = useTableStore((state) => state.graphicsQuality);
   const setGraphicsQuality = useTableStore((state) => state.setGraphicsQuality);
+  const autoSwitchCameraOnTurn = useTableStore((state) => state.autoSwitchCameraOnTurn);
+  const setAutoSwitchCameraOnTurn = useTableStore((state) => state.setAutoSwitchCameraOnTurn);
 
   const masterVolume = useAudioSettingsStore((state) => state.masterVolume);
   const bgmVolume = useAudioSettingsStore((state) => state.bgmVolume);
@@ -85,6 +87,19 @@ export function SettingsPage() {
               </label>
             ))}
           </div>
+
+          <span className="field-label">カメラ</span>
+          <p className="settings-description">
+            2人でテストプレイ中、プレイヤー交代のたびに現在のプレイヤー側へカメラ視点を自動で切り替えます。1人用のテストプレイでは常にOFFと同じ動作です。
+          </p>
+          <label className="settings-toggle-row">
+            <input
+              type="checkbox"
+              checked={autoSwitchCameraOnTurn}
+              onChange={(event) => setAutoSwitchCameraOnTurn(event.target.checked)}
+            />
+            ターン変更時に視点を自動切り替え
+          </label>
 
           <span className="field-label">プレイマット</span>
           <p className="settings-description">

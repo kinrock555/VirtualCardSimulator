@@ -137,6 +137,33 @@ export const PLAYER_DECK_ORIGINS: [{ x: number; z: number }, { x: number; z: num
   computeSeatDeckOrigin('far'), // player 2
 ];
 
+// ---- Per-player camera presets (offline 2-player turn switching) ----
+// player1 is the near (+Z) seat - the same one the existing default oblique/
+// top camera positions above already look from - and player2 is the far
+// (-Z) seat, same near/far convention as PLAYER_DECK_ORIGINS/SEAT_EDGE_Z
+// above. player2's presets are a pure Z-mirror of player1's (negate Z only;
+// X stays 0, Y is untouched): the camera simply approaches dead-on from the
+// opposite edge of the table with the same up vector, so CameraRig never
+// needs to touch `up` or do any rotation math to avoid an upside-down view.
+export type PlayerSeat = 'player1' | 'player2';
+type CameraViewMode = 'oblique' | 'top';
+export type CameraPreset = { position: [number, number, number]; target: [number, number, number] };
+
+function mirrorZPreset(preset: CameraPreset): CameraPreset {
+  return {
+    position: [preset.position[0], preset.position[1], -preset.position[2]],
+    target: [preset.target[0], preset.target[1], -preset.target[2]],
+  };
+}
+
+const PLAYER1_OBLIQUE_PRESET: CameraPreset = { position: CAMERA_VIEW_OBLIQUE_POSITION, target: CAMERA_TARGET };
+const PLAYER1_TOP_PRESET: CameraPreset = { position: CAMERA_VIEW_TOP_POSITION, target: CAMERA_TARGET };
+
+export const PLAYER_CAMERA_PRESETS: Record<PlayerSeat, Record<CameraViewMode, CameraPreset>> = {
+  player1: { oblique: PLAYER1_OBLIQUE_PRESET, top: PLAYER1_TOP_PRESET },
+  player2: { oblique: mirrorZPreset(PLAYER1_OBLIQUE_PRESET), top: mirrorZPreset(PLAYER1_TOP_PRESET) },
+};
+
 // ---- Table shape variants (round / casino) ----
 // Card placement bounds (clampToTable, in shared/tableLogic.ts) stay the same
 // rectangular box for every table type - it's shared with the online server,

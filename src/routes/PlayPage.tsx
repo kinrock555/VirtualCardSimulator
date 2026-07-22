@@ -20,7 +20,7 @@ import { PlayerSwitchOverlay } from '../components/table/PlayerSwitchOverlay';
 import { useDeckStore } from '../store/useDeckStore';
 import { useTableStore } from '../store/useTableStore';
 import { useScreenBgm } from '../lib/audio/useScreenBgm';
-import { PLAY_CAMERA_INITIAL_POSITION } from '../lib/tableConstants';
+import { PLAY_CAMERA_INITIAL_POSITION, type PlayerSeat } from '../lib/tableConstants';
 import { getTableThemeById } from '../config/tableThemes';
 import { getRoomEnvironmentById } from '../config/roomEnvironments';
 import { getTableTypeById } from '../config/tableTypes';
@@ -58,6 +58,7 @@ export function PlayPage() {
   const exitFocusMode = useTableStore((state) => state.exitFocusMode);
   const graphicsQuality = useTableStore((state) => state.graphicsQuality);
   const selectedTableTypeId = useTableStore((state) => state.selectedTableTypeId);
+  const autoSwitchCameraOnTurn = useTableStore((state) => state.autoSwitchCameraOnTurn);
 
   useScreenBgm('play');
 
@@ -76,6 +77,11 @@ export function PlayPage() {
   const isMultiplayer = players.length > 1;
   const activePlayer = isMultiplayer ? players[currentPlayerIndex] : undefined;
   const opponentPlayer = isMultiplayer ? players[(currentPlayerIndex + 1) % players.length] : undefined;
+  // Which side of the table CameraRig should be viewing from. Pinned to
+  // player1 (today's only view) for single-player and whenever the auto-
+  // switch setting is off - it only tracks the active seat in local 2-player
+  // play with the setting on, per the "自動視点切り替え設定" spec below.
+  const cameraSeat: PlayerSeat = isMultiplayer && autoSwitchCameraOnTurn && currentPlayerIndex === 1 ? 'player2' : 'player1';
 
   useEffect(() => {
     // "前回の続きから" (a saved board, possibly referencing a deleted/missing
@@ -202,6 +208,7 @@ export function PlayPage() {
                 roomEnvironment={roomEnvironment}
                 cameraView={cameraView}
                 cameraResetToken={cameraResetToken}
+                cameraSeat={cameraSeat}
                 graphicsQuality={graphicsQuality}
                 tableType={tableType.id}
               />

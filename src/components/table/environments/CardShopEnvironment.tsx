@@ -21,8 +21,17 @@ export function CardShopEnvironment({
 
   return (
     <RoomShell floorColor={environment.floorColor} wallColor={environment.wallColor}>
-      {/* Ceiling light strip. */}
-      <mesh position={[0, floorY + 8.85, 0]} rotation={[-Math.PI / 2, 0, 0]} raycast={noRaycast}>
+      {/* Ceiling light strip - lit face points DOWN toward the table (+Math.PI/2,
+          not -Math.PI/2 like the floor plane below, whose lit face points UP).
+          The previous -Math.PI/2 rotation flipped this: the emissive front
+          face pointed up into the open ceiling-less void, so from normal
+          play it rendered as an invisible back face, and from the top-down
+          camera preset (which sits above this mesh) it showed as a stray lit
+          panel with no ceiling to hide it above - the "見える裏側" bug. With
+          the front face aimed down, the top view now sees this mesh's culled
+          back face (nothing), same as looking up at any real ceiling fixture
+          from outside the building. */}
+      <mesh position={[0, floorY + 8.85, 0]} rotation={[Math.PI / 2, 0, 0]} raycast={noRaycast}>
         <planeGeometry args={[10, 2]} />
         <meshStandardMaterial color="#ffffff" emissive="#eef3ff" emissiveIntensity={0.7} />
       </mesh>

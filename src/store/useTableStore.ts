@@ -126,6 +126,8 @@ type TableState = {
   magnifierZoom: MagnifierZoom;
   /** 3D rendering quality preset - trims shadow resolution/decorative room objects when 'light'. */
   graphicsQuality: GraphicsQuality;
+  /** Local 2-player only: whether switchToPlayer() should animate the camera to the new current player's side. Single-player never auto-switches regardless of this flag (there's only ever one seat). */
+  autoSwitchCameraOnTurn: boolean;
   /** Currently-selected custom playmat image id (see lib/customPlaymatStorage.ts), or null for the standard theme-generated playmat. */
   selectedPlaymatId: string | null;
   /** Selected table shape (see config/tableTypes.ts) - independent of the table color theme. */
@@ -221,6 +223,7 @@ type TableState = {
   setLoupeEnabled: (enabled: boolean) => void;
   setMagnifierZoom: (zoom: MagnifierZoom) => void;
   setGraphicsQuality: (quality: GraphicsQuality) => void;
+  setAutoSwitchCameraOnTurn: (enabled: boolean) => void;
   setSelectedPlaymatId: (playmatId: string | null) => void;
   setTableType: (tableTypeId: string) => void;
 
@@ -338,6 +341,7 @@ const initialPreviewPanelCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.previ
 const initialTopBarCollapsed = loadFromStorage<boolean>(STORAGE_KEYS.topBarCollapsed, false);
 const initialLoupeEnabled = loadFromStorage<boolean>(STORAGE_KEYS.loupeEnabled, true);
 const initialGraphicsQuality = loadFromStorage<GraphicsQuality>(STORAGE_KEYS.graphicsQuality, 'standard');
+const initialAutoSwitchCameraOnTurn = loadFromStorage<boolean>(STORAGE_KEYS.autoSwitchCameraOnTurn, true);
 const initialSelectedPlaymatId = loadFromStorage<string | null>(STORAGE_KEYS.selectedPlaymatId, null);
 
 /** Player-1 (near edge) faces -Z and player-2 (far edge) faces +Z, so a
@@ -388,6 +392,7 @@ export const useTableStore = create<TableState>((set, get) => ({
   loupeEnabled: initialLoupeEnabled,
   magnifierZoom: initialMagnifierZoom,
   graphicsQuality: initialGraphicsQuality,
+  autoSwitchCameraOnTurn: initialAutoSwitchCameraOnTurn,
   selectedPlaymatId: initialSelectedPlaymatId,
   selectedTableTypeId: initialSelectedTableTypeId,
 
@@ -1325,6 +1330,11 @@ export const useTableStore = create<TableState>((set, get) => ({
   setGraphicsQuality: (quality) => {
     saveToStorage(STORAGE_KEYS.graphicsQuality, quality);
     set({ graphicsQuality: quality });
+  },
+
+  setAutoSwitchCameraOnTurn: (enabled) => {
+    saveToStorage(STORAGE_KEYS.autoSwitchCameraOnTurn, enabled);
+    set({ autoSwitchCameraOnTurn: enabled });
   },
 
   setSelectedPlaymatId: (playmatId) => {

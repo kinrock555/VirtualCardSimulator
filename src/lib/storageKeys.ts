@@ -18,4 +18,5 @@ export const STORAGE_KEYS = {
   selectedPlaymatId: 'vct.selectedPlaymatId.v1',
   tableType: 'vct.tableType.v1',
   audioSettings: 'vct.audioSettings.v1',
+  autoSwitchCameraOnTurn: 'vct.autoSwitchCameraOnTurn.v1',
 } as const;

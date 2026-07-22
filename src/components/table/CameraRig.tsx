@@ -10,9 +10,9 @@ import {
   CAMERA_MIN_POLAR_ANGLE,
   CAMERA_TARGET,
   CAMERA_TOP_POLAR_ANGLE,
-  CAMERA_VIEW_OBLIQUE_POSITION,
-  CAMERA_VIEW_TOP_POSITION,
   CAMERA_VIEW_TRANSITION_SECONDS,
+  PLAYER_CAMERA_PRESETS,
+  type PlayerSeat,
 } from '../../lib/tableConstants';
 import type { CameraView } from '../../store/useTableStore';
 
@@ -28,7 +28,9 @@ type CameraRigProps = {
    * single fixed oblique-only range unchanged.
    */
   view?: CameraView;
-  /** Bump this (e.g. on every "reset camera" click) to replay the animation into `view` even when `view` itself didn't change. */
+  /** Offline 2-player only: which side of the table to view from. Defaults to player1 (the pre-existing single/near-side view) when omitted. */
+  seat?: PlayerSeat;
+  /** Bump this (e.g. on every "reset camera" click) to replay the animation into `view`/`seat` even when neither changed. */
   resetToken?: number;
 };
 
@@ -44,31 +46,69 @@ function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
 }
 
-type ViewAnimation = { from: Vector3; to: Vector3; elapsed: number };
+function lerp(from: number, to: number, t: number): number {
+  return from + (to - from) * t;
+}
 
-export function CameraRig({ controlsRef, enabled, minDistance, maxDistance, view, resetToken }: CameraRigProps) {
+/** Interpolates an angle (radians) by the shorter of its two possible sweeps, so e.g. going from just-past-PI to just-before--PI is a tiny step, not a near-full-circle one. */
+function lerpAngle(from: number, to: number, t: number): number {
+  const twoPi = Math.PI * 2;
+  let delta = (to - from) % twoPi;
+  delta = ((delta + Math.PI * 3) % twoPi) - Math.PI;
+  return from + delta * t;
+}
+
+/** Polar angle (from +Y) / azimuth (around +Y, from +Z) / radius, relative to CAMERA_TARGET - the same convention OrbitControls itself uses internally. Working in this space (instead of a straight Cartesian lerp) is what lets a player1<->player2 swap sweep AROUND the table instead of cutting straight through the camera-up singularity directly over the target. */
+type OrbitPose = { radius: number; phi: number; theta: number };
+
+function poseFromPosition(position: Vector3): OrbitPose {
+  const offset = position.clone().sub(new Vector3(...CAMERA_TARGET));
+  const radius = Math.max(offset.length(), 0.0001);
+  const phi = Math.acos(Math.min(1, Math.max(-1, offset.y / radius)));
+  const theta = Math.atan2(offset.x, offset.z);
+  return { radius, phi, theta };
+}
+
+function poseToPosition(pose: OrbitPose): Vector3 {
+  const sinPhiRadius = Math.sin(pose.phi) * pose.radius;
+  return new Vector3(
+    sinPhiRadius * Math.sin(pose.theta) + CAMERA_TARGET[0],
+    Math.cos(pose.phi) * pose.radius + CAMERA_TARGET[1],
+    sinPhiRadius * Math.cos(pose.theta) + CAMERA_TARGET[2],
+  );
+}
+
+type ViewAnimation = { from: OrbitPose; to: OrbitPose; elapsed: number };
+
+export function CameraRig({ controlsRef, enabled, minDistance, maxDistance, view, seat, resetToken }: CameraRigProps) {
   const animationRef = useRef<ViewAnimation | null>(null);
 
   useEffect(() => {
     if (!view) return;
     const controls = controlsRef.current;
     if (!controls) return;
-    const targetPosition = view === 'top' ? CAMERA_VIEW_TOP_POSITION : CAMERA_VIEW_OBLIQUE_POSITION;
+    const activeSeat = seat ?? 'player1';
+    const targetPosition = PLAYER_CAMERA_PRESETS[activeSeat][view].position;
     animationRef.current = {
-      from: controls.object.position.clone(),
-      to: new Vector3(...targetPosition),
+      from: poseFromPosition(controls.object.position),
+      to: poseFromPosition(new Vector3(...targetPosition)),
       elapsed: 0,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, resetToken]);
+  }, [view, seat, resetToken]);
 
   useFrame((_, delta) => {
     const controls = controlsRef.current;
     const animation = animationRef.current;
     if (!controls || !animation) return;
     animation.elapsed += delta;
-    const t = Math.min(1, animation.elapsed / CAMERA_VIEW_TRANSITION_SECONDS);
-    controls.object.position.lerpVectors(animation.from, animation.to, easeInOutCubic(t));
+    const t = easeInOutCubic(Math.min(1, animation.elapsed / CAMERA_VIEW_TRANSITION_SECONDS));
+    const pose: OrbitPose = {
+      radius: lerp(animation.from.radius, animation.to.radius, t),
+      phi: lerp(animation.from.phi, animation.to.phi, t),
+      theta: lerpAngle(animation.from.theta, animation.to.theta, t),
+    };
+    controls.object.position.copy(poseToPosition(pose));
     controls.update();
     if (t >= 1) animationRef.current = null;
   });
