@@ -1051,7 +1051,10 @@ button {
 .hand-panel-track {
   overflow-x: auto;
   overflow-y: hidden;
-  padding: 14px 24px 16px;
+  /* Trimmed from 14px/24px/16px to match the smaller cards below - this
+     track's own padding was the last bit of reserved vertical space beyond
+     the cards' actual rendered height. */
+  padding: 8px 20px 10px;
   pointer-events: auto;
 }
 
@@ -1079,12 +1082,15 @@ button {
   align-items: center;
   gap: 4px;
   cursor: grab;
-  transition: transform 0.12s ease;
+  transition: transform 140ms ease;
   touch-action: none;
 }
 
+/* Only the hovered card lifts and grows - it doesn't push its neighbors
+   (each card's own margin/overlap is untouched by this), so the 3D field
+   behind the tray stays mostly visible even when hovering. */
 .hand-card:hover {
-  transform: translateY(-14px);
+  transform: translateY(-10px) scale(1.05);
   z-index: 5;
 }
 
@@ -1141,7 +1147,9 @@ button {
 .hand-drag-ghost {
   position: fixed;
   z-index: 200;
-  width: 92px;
+  /* Matches the hand card's own scaled-down CARD_BASE_WIDTH (HandPanel.tsx)
+     so the dragged ghost doesn't look larger than the card it came from. */
+  width: 75px;
   aspect-ratio: 5 / 7;
   transform: translate(-50%, -50%);
   pointer-events: none;

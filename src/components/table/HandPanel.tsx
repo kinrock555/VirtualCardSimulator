@@ -5,8 +5,12 @@ import { screenToTablePoint } from '../../lib/threeBridge';
 import { getCardBackUrl } from '../../lib/cardLoader';
 
 const OVERLAP_THRESHOLD = 9;
-const CARD_BASE_WIDTH = 92;
-const OVERLAP_MARGIN = -34;
+// Scales the previous 92px card down to ~82% so hand cards read smaller
+// without losing legibility - OVERLAP_MARGIN keeps the same proportion of
+// the card width it always did, so the stacking density is unchanged.
+const HAND_CARD_SCALE = 0.82;
+const CARD_BASE_WIDTH = Math.round(92 * HAND_CARD_SCALE);
+const OVERLAP_MARGIN = Math.round(-34 * HAND_CARD_SCALE);
 
 type DragGhost = { instanceId: string; clientX: number; clientY: number; faceUp: boolean };
 
